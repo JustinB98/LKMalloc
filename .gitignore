@@ -2,6 +2,6 @@
 /build
 *.o
 *.d
-filesec
+demo
 .~*
 .*swp
