@@ -23,12 +23,15 @@ void lk_data_init() {
 	list = linked_list_init(onRemoval);	
 }
 
-void lk_data_insert(void *ptr, u_int size, u_int flags) {
+void lk_data_insert(void *ptr, u_int size, u_int flags, char *file, const char *func, int line) {
 	LK_DATA *lk_data = malloc(sizeof(LK_DATA));
 	lk_data->ptr = ptr;
 	lk_data->size = size;
 	lk_data->flags = flags;
 	lk_data->freed = 0;
+	lk_data->file = file;
+	lk_data->func = func;
+	lk_data->line = line;
 	linked_list_insert(list, ptr, lk_data);
 }
 
