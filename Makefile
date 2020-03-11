@@ -23,7 +23,7 @@ ALL_EC_TESTS := $(wildcard $(ECTSTD)/test*.sh)
 ALL_VAL_TESTS := $(wildcard $(VALTSTD)/test*.sh)
 ALL_DEPS := $(wildcard $(BLDD)/*.d)
 
-.PHONY: all clean tests run_reg_tests run_ec_tests ec
+.PHONY: all clean depend tests run_reg_tests run_ec_tests ec
 
 all: $(BLDD) $(EXECF)
 
@@ -32,6 +32,9 @@ clean:
 
 ec: CFLAGS += $(ECFLAGS)
 ec: all
+
+depend: CFLAGS += $(DEPFLAGS)
+depend: all
 
 run_test_directory = \
 		total_tests=0 ; \
@@ -75,7 +78,7 @@ $(BLDD):
 include $(ALL_DEPS)
 
 $(BLDD)/%.o: $(SRCD)/%.c
-	$(CC) $(INCF) $(CFLAGS) $(DEPFLAGS) -c -o $@ $<
+	$(CC) $(INCF) $(CFLAGS) -c -o $@ $<
 
 $(EXECF): $(ALL_OBJF)
 	$(CC) -o $@ $^ $(LDFLAGS)
