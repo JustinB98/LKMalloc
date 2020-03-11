@@ -19,10 +19,14 @@
 #define LKR_ORPHAN_FREE 0x8
 #define LKR_DOUBLE_FREE 0x10
 
-int lkmalloc(u_int size, void **ptr, u_int flags);
+#define lkmalloc(size, ptr, flags) __lkmalloc_internal((size), (ptr), (flags), __FILE__, __func__, __LINE__)
+#define lkfree(ptr, flags) __lkfree_internal((ptr), (flags), __FILE__, __func__, __LINE__)
+#define lkreport(fd, flags) __lkreport_internal((fd), (flags))
 
-int lkfree(void **ptr, u_int flags);
+int __lkmalloc_internal(u_int size, void **ptr, u_int flags, char *file, const char *func, int line);
 
-int lkreport(int fd, u_int flags);
+int __lkfree_internal(void **ptr, u_int flags, char *file, const char *func, int line);
+
+int __lkreport_internal(int fd, u_int flags);
 
 #endif /* LK_LIB_H */
