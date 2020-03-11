@@ -17,8 +17,6 @@ LK_DATA *lk_data_find(void *ptr, u_int flags);
 
 void lk_data_remove(void *ptr);
 
-LK_DATA *lk_data_find(void *ptr);
-
 void lk_data_fini();
 
 #endif /* LK_DATA_H */
