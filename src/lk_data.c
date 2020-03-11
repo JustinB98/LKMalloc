@@ -7,10 +7,16 @@
 static LINKED_LIST *list;
 
 static void *current_ptr_to_find;
+static u_int global_flags;
 
 static int lk_finder(void *data) {
 	LK_DATA *lk_data = data;
-	return lk_data->ptr == current_ptr_to_find;
+	if (lk_data->ptr == current_ptr_to_find) return 1;
+	else if ((global_flags & LKF_APPROX) == 0) return 0;
+	u_int ptr_size = lk_data->size;
+	void *start_ptr = lk_data->ptr;
+	void *end_ptr = start_ptr + ptr_size;
+	return start_ptr < current_ptr_to_find && current_ptr_to_find < end_ptr;
 }
 
 static void onRemoval(void *data) {
@@ -35,10 +41,12 @@ void lk_data_insert(void *ptr, u_int size, u_int flags, char *file, const char *
 	linked_list_insert(list, ptr, lk_data);
 }
 
-LK_DATA *lk_data_find(void *ptr) {
+LK_DATA *lk_data_find(void *ptr, u_int flags) {
 	current_ptr_to_find = ptr;
+	global_flags = flags;
 	LK_DATA *result = linked_list_find(list, lk_finder);
 	current_ptr_to_find = NULL;
+	global_flags = 0;
 	return result;
 }
 
