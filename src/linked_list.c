@@ -63,10 +63,10 @@ static NODE *node_remove(NODE *node, void *key, void (*onRemove)(void *)) {
 	}
 }
 
-static void *node_find(NODE *node, void *key) {
+static void *node_find(NODE *node, int (*finder)(void*)) {
 	if (node == NULL) return NULL;
-	else if (node->key == key) return node->data;
-	else return node_find(node->next, key);
+	else if (finder(node->data)) return node->data;
+	else return node_find(node->next, finder);
 }
 
 static void node_fini(NODE *node, void (*onRemove)(void *)) {
@@ -87,9 +87,9 @@ void linked_list_remove(LINKED_LIST *list, void *key) {
 	list->root = node_remove(root, key, list->onRemove);
 }
 
-void *linked_list_find(LINKED_LIST *list, void *key) {
+void *linked_list_find(LINKED_LIST *list, int (*finder)(void *)) {
 	NODE *root = list->root;
-	return node_find(root, key);
+	return node_find(root, finder);
 }
 
 void linked_list_fini(LINKED_LIST *list) {

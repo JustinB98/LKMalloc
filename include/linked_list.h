@@ -19,7 +19,7 @@ void linked_list_insert(LINKED_LIST *list, void *key, void *data);
 
 void linked_list_remove(LINKED_LIST *list, void *key);
 
-void *linked_list_find(LINKED_LIST *list, void *key);
+void *linked_list_find(LINKED_LIST *list, int (*finder)(void *));
 
 void linked_list_fini(LINKED_LIST *list);
 
