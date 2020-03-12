@@ -3,6 +3,7 @@
 
 #include "lk_data.h"
 #include "linked_list.h"
+#include "lk_lib.h"
 
 static LINKED_LIST *list;
 
@@ -21,7 +22,9 @@ static int lk_finder(void *data) {
 
 static void onRemoval(void *data) {
 	LK_DATA *lk_data = data;
-	free(lk_data->ptr);
+	if (lk_data->freed == 0) {
+		free(lk_data->ptr);
+	}
 	free(lk_data);
 }
 
