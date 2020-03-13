@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <string.h>
 
-#include "lk_lib.h"
+#include "lkmalloc.h"
 #include "lk_data.h"
 
 static int initialized = 0;
@@ -103,3 +103,4 @@ int __lkfree_internal(void **ptr, u_int flags, char *file, const char *func, int
 	}
 	return attempt_to_free(data_found, flags, *ptr);
 }
+

@@ -3,7 +3,7 @@
 
 #include "lk_data.h"
 #include "linked_list.h"
-#include "lk_lib.h"
+#include "lkmalloc.h"
 
 static LINKED_LIST *list;
 
