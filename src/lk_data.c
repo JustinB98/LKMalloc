@@ -9,6 +9,8 @@ static LINKED_LIST *list;
 
 static void *current_ptr_to_find;
 static u_int global_flags;
+static void (*m_consumer)(LK_RECORD *);
+static void (*f_consumer)(LK_RECORD *);
 
 static int lk_finder(void *data) {
 	LK_RECORD *record = data;
@@ -24,7 +26,8 @@ static int lk_finder(void *data) {
 
 static void free_malloc_record(LK_MALLOC_RECORD *record) {
 	if (record->times_freed == 0) {
-		free(record->malloced_ptr);
+		// free(record->malloced_ptr);
+		fprintf(stderr, "WARNING - Memory leak! %p was never freed!\n", record->addr_returned);
 	}
 }
 
@@ -89,6 +92,27 @@ LK_RECORD *lk_data_find_malloc_record(LK_FREE_RECORD *free_record, void *ptr, u_
 
 void lk_data_remove(void *ptr) {
 	linked_list_remove(list, ptr);
+}
+
+static int lk_consumer(void *data) {
+	LK_RECORD *rec = data;
+	int ret = 0;
+	if (rec->record_type == 0) {
+		ret = m_consumer(rec);
+	} else {
+		ret = f_consumer(rec);
+	}
+	return ret < 0 ? 0 : 1;
+}
+
+int lk_data_for_each(int (*mal_consumer)(LK_RECORD *), int (*free_consumer)(LK_RECORD *)) {
+	m_consumer = mal_consumer;
+	f_consumer = free_consumer;
+	/* Taking advantage that we can pass a function into the finder */
+	void *returned = linked_list_find(list, lk_consumer);
+	// NULL means entire process completed
+	// Non null means the process was interuptted by a failed read
+	return returned == NULL ? 0 : -1;
 }
 
 void lk_data_fini() {

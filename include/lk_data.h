@@ -35,6 +35,11 @@ LK_RECORD *lk_data_find_malloc_record(LK_FREE_RECORD *free_record, void *ptr, u_
 
 void lk_data_remove(void *ptr);
 
+/**
+ * Functions should return negative number on failure, 0 or positive number on success
+ */
+void lk_data_for_each(int (*mal_consumer)(LK_RECORD *), int (*free_consumer)(LK_RECORD *));
+
 void lk_data_fini();
 
 #endif /* LK_DATA_H */
