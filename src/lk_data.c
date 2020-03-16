@@ -9,8 +9,8 @@ static LINKED_LIST *list;
 
 static void *current_ptr_to_find;
 static u_int global_flags;
-static void (*m_consumer)(LK_RECORD *);
-static void (*f_consumer)(LK_RECORD *);
+static int (*m_consumer)(LK_RECORD *);
+static int (*f_consumer)(LK_RECORD *);
 
 static int lk_finder(void *data) {
 	LK_RECORD *record = data;

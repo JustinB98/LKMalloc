@@ -38,7 +38,7 @@ void lk_data_remove(void *ptr);
 /**
  * Functions should return negative number on failure, 0 or positive number on success
  */
-void lk_data_for_each(int (*mal_consumer)(LK_RECORD *), int (*free_consumer)(LK_RECORD *));
+int lk_data_for_each(int (*mal_consumer)(LK_RECORD *), int (*free_consumer)(LK_RECORD *));
 
 void lk_data_fini();
 
