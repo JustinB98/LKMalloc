@@ -74,6 +74,7 @@ LK_RECORD *lk_data_insert_malloc_record(void **ptr_passed, u_int size, u_int fla
 LK_RECORD *lk_data_insert_free_record(void **ptr_passed, void *ptr_requested, u_int flags, char *file, const char *function, int line) {
 	LK_FREE_RECORD *free_record = malloc(sizeof(LK_FREE_RECORD));
 	free_record->ptr_requested = ptr_requested;
+	free_record->ptr_freed = NULL;
 	return lk_data_insert(1, line, flags, file, function, ptr_passed, free_record);
 }
 
