@@ -102,7 +102,7 @@ static int lk_consumer(void *data) {
 	} else {
 		ret = f_consumer(rec);
 	}
-	return ret < 0 ? 0 : 1;
+	return ret < 0 ? 1 : 0;
 }
 
 int lk_data_for_each(int (*mal_consumer)(LK_RECORD *), int (*free_consumer)(LK_RECORD *)) {
