@@ -129,7 +129,16 @@ static int write_buf(int fd, void *buf, size_t size) {
 	return result < 0 ? -1 : 0;
 }
 
+static int should_malloc_record_print(LK_MALLOC_RECORD *malloc_record) {
+	if ((report_flags & LKR_SERIOUS) && malloc_record->times_freed == 0) return 1;
+	else if ((report_flags & LKR_MATCH) && malloc_record->times_freed == 1) return 1;
+	else if ((report_flags & LKR_DOUBLE_FREE) && malloc_record->times_freed > 1) return 1;
+	else return 0;
+}
+
 static int lk_print_malloc_record(LK_RECORD *record) {
+	if (!should_malloc_record_print(record->sub_record)) return 0;
+	++records_written;
 	LK_MALLOC_RECORD *malloc_record = record->sub_record;
 	return dprintf(current_fd, "%d,%s,%s,%d,%lu,%p,%d,%u,%p\n",
 				   record->record_type, record->file_name, record->function_name,
@@ -138,8 +147,18 @@ static int lk_print_malloc_record(LK_RECORD *record) {
 				   malloc_record->addr_returned);
 }
 
+static int should_free_record_print(LK_FREE_RECORD *free_record) {
+	if ((report_flags & LKR_MATCH) && free_record->ptr_freed != NULL) return 1;
+	else if ((report_flags & LKR_BAD_FREE) &&
+			  free_record->ptr_requested != free_record->ptr_freed) return 1;
+	else if ((report_flags & LKR_ORPHAN_FREE) && free_record->ptr_freed == NULL) return 1;
+	else return 0;
+}
+
 static int lk_print_free_record(LK_RECORD *record) {
-	return dprintf(current_fd, "%d,%s,%s,%d,%lu,%p,%d,%u,\n",
+	if (!should_free_record_print(record->sub_record)) return 0;
+	++records_written;
+	return dprintf(current_fd, "%d,%s,%s,%d,%lu,%p,%d,%u\n",
 				   record->record_type, record->file_name, record->function_name,
 				   record->line_num, record->seconds + record->microseconds,
 				   record->ptr_passed, record->retval, record->flags);
@@ -152,6 +171,7 @@ static int print_header(int fd) {
 
 int __lkreport_internal(int fd, u_int flags) {
 	init_if_needed();
+	if (flags == LKR_NONE) return 0;
 	int result = print_header(fd);
 	if (result < 0) goto __lk_report_internal_finish;
 	records_written = 0;
