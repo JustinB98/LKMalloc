@@ -52,6 +52,15 @@ void linked_list_reverse_iterate(LINKED_LIST *list, void (*consumer)(void *)) {
 	}
 }
 
+void *linked_list_find(LINKED_LIST *list, int (*finder)(void *)) {
+	NODE *current = list->root;
+	while (current != NULL) {
+		if (finder(current->data)) return current->data;
+		current = current->next;
+	}
+	return NULL;
+}
+
 void linked_list_fini(LINKED_LIST *list, void (*onRemove)(void *)) {
 	NODE *current = list->root;
 	while (current != NULL) {

@@ -20,6 +20,8 @@ void linked_list_iterate(LINKED_LIST *list, void (*consumer)(void *));
 
 void linked_list_reverse_iterate(LINKED_LIST *list, void (*consumer)(void *));
 
+void *linked_list_find(LINKED_LIST *list, int (*finder)(void *));
+
 void linked_list_fini(LINKED_LIST *list, void (*onRemove)(void *));
 
 #endif /* LINKED_LIST_H */
