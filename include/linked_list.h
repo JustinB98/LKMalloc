@@ -2,25 +2,24 @@
 #define LINKED_LIST_H
 
 typedef struct node {
+	void *data;
 	struct node *next;
 	struct node *prev;
-	void *data;
-	void *key;
 } NODE;
 
 typedef struct linked_list {
 	NODE *root;
-	void (*onRemove)(void *);
+	NODE *end;
 } LINKED_LIST;
 
-LINKED_LIST *linked_list_init(void (*onRemove)(void *));
+LINKED_LIST *linked_list_init();
 
-void linked_list_insert(LINKED_LIST *list, void *key, void *data);
+void linked_list_insert(LINKED_LIST *list, void *data);
 
-void linked_list_remove(LINKED_LIST *list, void *key);
+void linked_list_iterate(LINKED_LIST *list, void (*consumer)(void *));
 
-void *linked_list_find(LINKED_LIST *list, int (*finder)(void *));
+void linked_list_reverse_iterate(LINKED_LIST *list, void (*consumer)(void *));
 
-void linked_list_fini(LINKED_LIST *list);
+void linked_list_fini(LINKED_LIST *list, void (*onRemove)(void *));
 
-#endif
+#endif /* LINKED_LIST_H */
