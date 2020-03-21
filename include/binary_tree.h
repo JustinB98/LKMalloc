@@ -12,7 +12,7 @@ typedef struct binary_tree {
 	NODE *root;
 } BINARY_TREE;
 
-BINARY_TREE *binary_tree_init(void (*onRemove)(void *));
+BINARY_TREE *binary_tree_init();
 
 void binary_tree_insert(BINARY_TREE *tree, void *key, void *data);
 
