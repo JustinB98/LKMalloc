@@ -16,7 +16,11 @@ BINARY_TREE *binary_tree_init();
 
 void binary_tree_insert(BINARY_TREE *tree, void *key, void *data);
 
+void binary_tree_replace(BINARY_TREE *tree, void *key, void *data);
+
 void *binary_tree_find(BINARY_TREE *tree, void *key);
+
+void *binary_tree_find_with_function(BINARY_TREE *tree, void *key, void *ref, int (*finder)(void *, void *));
 
 void binary_tree_remove(BINARY_TREE *tree, void *key);
 
