@@ -12,21 +12,21 @@ LINKED_LIST *linked_list_init() {
 	return list;
 }
 
-static NODE *create_node(void *data) {
-	NODE *node = malloc(sizeof(NODE));
-	if (node == NULL) {
-		fprintf(stderr, "WARNING, NODE COULD NOT BE CREATED");
+static LINKED_NODE *create_linked_node(void *data) {
+	LINKED_NODE *linked_node = malloc(sizeof(LINKED_NODE));
+	if (linked_node == NULL) {
+		fprintf(stderr, "WARNING, LINKED_NODE COULD NOT BE CREATED");
 		return NULL;
 	}
-	node->data = data;
-	node->next = NULL;
-	node->prev = NULL;
-	return node;
+	linked_node->data = data;
+	linked_node->next = NULL;
+	linked_node->prev = NULL;
+	return linked_node;
 }
 
 void linked_list_insert(LINKED_LIST *list, void *data) {
-	NODE *root = list->root;
-	NODE *new_root = create_node(data);
+	LINKED_NODE *root = list->root;
+	LINKED_NODE *new_root = create_linked_node(data);
 	if (root != NULL) {
 		root->prev = new_root;
 	} else {
@@ -37,7 +37,7 @@ void linked_list_insert(LINKED_LIST *list, void *data) {
 }
 
 void linked_list_iterate(LINKED_LIST *list, void (*consumer)(void *)) {
-	NODE *current = list->end;
+	LINKED_NODE *current = list->end;
 	while (current != NULL) {
 		consumer(current->data);
 		current = current->prev;
@@ -45,7 +45,7 @@ void linked_list_iterate(LINKED_LIST *list, void (*consumer)(void *)) {
 }
 
 void linked_list_reverse_iterate(LINKED_LIST *list, void (*consumer)(void *)) {
-	NODE *current = list->root;
+	LINKED_NODE *current = list->root;
 	while (current != NULL) {
 		consumer(current->data);
 		current = current->next;
@@ -53,7 +53,7 @@ void linked_list_reverse_iterate(LINKED_LIST *list, void (*consumer)(void *)) {
 }
 
 void *linked_list_find(LINKED_LIST *list, int (*finder)(void *)) {
-	NODE *current = list->root;
+	LINKED_NODE *current = list->root;
 	while (current != NULL) {
 		if (finder(current->data)) return current->data;
 		current = current->next;
@@ -62,10 +62,10 @@ void *linked_list_find(LINKED_LIST *list, int (*finder)(void *)) {
 }
 
 void linked_list_fini(LINKED_LIST *list, void (*onRemove)(void *)) {
-	NODE *current = list->root;
+	LINKED_NODE *current = list->root;
 	while (current != NULL) {
 		onRemove(current->data);
-		NODE *tmp = current;
+		LINKED_NODE *tmp = current;
 		current = current->next;
 		free(tmp);
 	}

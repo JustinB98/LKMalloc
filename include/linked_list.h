@@ -1,15 +1,15 @@
 #ifndef LINKED_LIST_H
 #define LINKED_LIST_H
 
-typedef struct node {
+typedef struct linked_node {
 	void *data;
-	struct node *next;
-	struct node *prev;
-} NODE;
+	struct linked_node *next;
+	struct linked_node *prev;
+} LINKED_NODE;
 
 typedef struct linked_list {
-	NODE *root;
-	NODE *end;
+	LINKED_NODE *root;
+	LINKED_NODE *end;
 } LINKED_LIST;
 
 LINKED_LIST *linked_list_init();
