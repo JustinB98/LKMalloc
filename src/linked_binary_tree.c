@@ -36,6 +36,15 @@ static LINKED_NODE *linked_node_insert(LINKED_NODE *linked_node, void *key, void
 	return linked_node;
 }
 
+static void *linked_node_find_with_function(LINKED_NODE *node, void *key, void *ref,
+											int (*finder)(void *, void *)) {
+	if (node == NULL) return NULL;
+	else if (finder(ref, node->list->root)) return node->list->root;
+	else if (node->key < key) return linked_node_find_with_function(node->right, key, ref, finder);
+	else if (node->key > key) return linked_node_find_with_function(node->left, key, ref, finder);
+	else return node->list->root;
+}
+
 static void linked_node_fini(LINKED_NODE *linked_node, void (*onRemove)(void *)) {
 	if (linked_node != NULL) {
 		LINKED_LIST *list = linked_node->list;
@@ -58,6 +67,11 @@ void *linked_binary_tree_find(LINKED_BINARY_TREE *tree, void *key) {
 	LINKED_NODE *linked_node = linked_node_find(root, key);
 	LINKED_LIST *list = linked_node->list;
 	return list == NULL ? NULL : list->root;
+}
+
+void *linked_binary_tree_find_with_function(LINKED_BINARY_TREE *tree, void *key, void *ref,
+											int (*finder)(void *, void *)) {
+	return linked_node_find_with_function(tree->root, key, ref, finder);
 }
 
 void linked_binary_tree_insert(LINKED_BINARY_TREE *tree, void *key, void *data) {

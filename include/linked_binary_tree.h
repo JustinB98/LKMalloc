@@ -18,6 +18,9 @@ void linked_binary_tree_insert(LINKED_BINARY_TREE *tree, void *key, void *data);
 
 void *linked_binary_tree_find(LINKED_BINARY_TREE *tree, void *key);
 
+void *linked_binary_tree_find_with_function(LINKED_BINARY_TREE *tree, void *key, void *ref,
+											int (*finder)(void *, void *));
+
 void linked_binary_tree_remove(LINKED_BINARY_TREE *tree, void *key);
 
 void linked_binary_tree_fini(LINKED_BINARY_TREE *tree, void (*onRemove)(void *));
