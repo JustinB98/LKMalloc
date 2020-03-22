@@ -18,6 +18,8 @@ static NODE *create_node(void *key, void *data) {
 	}
 	node->key = key;
 	node->data = data;
+	node->left = NULL;
+	node->right = NULL;
 	return node;
 }
 
@@ -136,5 +138,6 @@ void binary_tree_remove(BINARY_TREE *tree, void *key) {
 void binary_tree_fini(BINARY_TREE *tree, void (*onRemove)(void *)) {
 	NODE *root = tree->root;
 	node_fini(root, onRemove);
+	free(tree);
 }
 
