@@ -21,16 +21,17 @@ static NODE *create_node(void *key, void *data) {
 	return node;
 }
 
-static void node_replace(NODE *node, void *key, void *data) {
+static NODE *node_replace(NODE *node, void *key, void *data) {
 	if (node == NULL) {
-		return;
+		node = create_node(key, data);
 	} else if (node->key == key) {
 		node->data = data;
 	} else if (node->key < key) {
-		node_replace(node->right, key, data);
+		node->right = node_replace(node->right, key, data);
 	} else if (node->key > key) {
-		node_replace(node->left, key, data);
+		node->left = node_replace(node->left, key, data);
 	}
+	return node;
 }
 
 static NODE *node_insert(NODE *node, void *key, void *data) {
@@ -94,8 +95,8 @@ static void node_fini(NODE *node, void (*onRemove)(void *)) {
 static void *node_find_with_function(NODE *node, void *key, void *ref, int (*finder)(void *, void *)) {
 	if (node == NULL) return NULL;
 	else if (finder(ref, node->data)) return node->data;
-	else if (node->key > key) return node_find_with_function(node->left, ref, finder);
-	else if (node->key < key) return node_find_with_function(node->right, ref, finder);
+	else if (node->key > key) return node_find_with_function(node->left, key, ref, finder);
+	else if (node->key < key) return node_find_with_function(node->right, key, ref, finder);
 	else return node->data;
 }
 
@@ -113,8 +114,8 @@ void *binary_tree_find(BINARY_TREE *tree, void *key) {
 }
 
 void *binary_tree_find_with_function(BINARY_TREE *tree, void *key, void *ref, int (*finder)(void *, void *)) {
-	NODE *root = list->root;
-	return node_find_with_function(node, key, ref, finder);
+	NODE *root = tree->root;
+	return node_find_with_function(root, key, ref, finder);
 }
 
 void binary_tree_insert(BINARY_TREE *tree, void *key, void *data) {
@@ -123,8 +124,8 @@ void binary_tree_insert(BINARY_TREE *tree, void *key, void *data) {
 }
 
 void binary_tree_replace(BINARY_TREE *tree, void *key, void *data) {
-	NODE *node = tree->root;
-	node_replace(root, key, data);
+	NODE *root = tree->root;
+	tree->root = node_replace(root, key, data);
 }
 
 void binary_tree_remove(BINARY_TREE *tree, void *key) {
