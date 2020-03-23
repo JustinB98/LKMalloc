@@ -49,7 +49,7 @@ static NODE *node_insert(NODE *node, void *key, void *data) {
 
 static NODE *get_and_set_up_successor(NODE *parent, NODE *node) {
 	if (node->left == NULL) {
-		parent->left = NULL;
+		parent->left = node->right;
 		return node;
 	} else {
 		return get_and_set_up_successor(node, node->left);
@@ -59,13 +59,15 @@ static NODE *get_and_set_up_successor(NODE *parent, NODE *node) {
 static NODE *free_node(NODE *parent, NODE *node) {
 	NODE *new_node = NULL;
 	if (node->left == NULL && node->right == NULL) {
-		return NULL;
+		new_node = NULL;
 	} else if (node->left == NULL) {
 		new_node = node->right;
 	} else if (node->right == NULL) {
 		new_node = node->left;
 	} else {
 		new_node = get_and_set_up_successor(parent, node);	
+		new_node->left = node->left;
+		new_node->right = node->right;
 	}
 	free(node);
 	return new_node;
@@ -105,7 +107,6 @@ static void *node_find_with_function(NODE *node, void *key, void *ref, int (*fin
 BINARY_TREE *binary_tree_init() {
 	BINARY_TREE *tree = malloc(sizeof(BINARY_TREE));
 	tree->root = NULL;
-	/* TODO anything else */
 	return tree;
 }
 
@@ -132,7 +133,7 @@ void binary_tree_replace(BINARY_TREE *tree, void *key, void *data) {
 
 void binary_tree_remove(BINARY_TREE *tree, void *key) {
 	NODE *root = tree->root;
-	node_remove(NULL, root, key);
+	tree->root = node_remove(NULL, root, key);
 }
 
 void binary_tree_fini(BINARY_TREE *tree, void (*onRemove)(void *)) {
