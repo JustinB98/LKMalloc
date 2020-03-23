@@ -94,14 +94,15 @@ int __lkmalloc_internal(u_int size, void **ptr, u_int flags, char *file, const c
 	malloc_record->sub_record.malloc_record.size = size;
 	void *malloced_ptr = get_ptr(size, flags);
 	malloc_record->sub_record.malloc_record.malloced_ptr = malloced_ptr;
-	malloc_record->sub_record.malloc_record.addr_returned = get_user_ptr(malloced_ptr, flags);
+	void *user_ptr = get_user_ptr(malloced_ptr, flags);
+	malloc_record->sub_record.malloc_record.addr_returned = user_ptr;
 	if (malloced_ptr == NULL) {
 		malloc_record->retval = -errno;
 		lk_data_insert_failed_record(malloc_record);
 		return -errno;
 	}
-	lk_data_insert_malloc_record(malloced_ptr, malloc_record);
-	*ptr = malloc_record->sub_record.malloc_record.addr_returned;
+	lk_data_insert_malloc_record(user_ptr, malloc_record);
+	*ptr = user_ptr;
 	malloc_record->retval = 0;
 	return 0;
 }
