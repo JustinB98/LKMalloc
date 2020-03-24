@@ -34,7 +34,10 @@ typedef struct lk_record {
 	} sub_record;
 } LK_RECORD;
 
-LK_RECORD *lk_record_create(int record_type, u_int flags, void **ptr_passed, LK_METADATA *metadata);
+LK_RECORD *lk_create_record(int record_type, u_int flags, void **ptr_passed, LK_METADATA *metadata);
+LK_RECORD *lk_create_malloc_record(u_int flags, void **ptr_passed, LK_METADATA *metadata, u_int size);
+
+u_int lk_record_get_flags(LK_RECORD *record);
 
 int lk_record_get_line_num(LK_RECORD *record);
 
@@ -63,7 +66,7 @@ void *lk_free_record_get_ptr_freed(LK_RECORD *record);
 void lk_free_record_set_ptr_freed(LK_RECORD *record, void *ptr_freed);
 
 int lk_free_record_get_times_freed(LK_RECORD *record);
-void lk_free_record_increment_times_freed(LK_RECORD *record);
+void lk_free_record_set_times_freed(LK_RECORD *record, int times_freed);
 
 int lk_free_record_is_orphaned_free(LK_RECORD *record);
 void lk_free_record_set_orphaned_free(LK_RECORD *record, int orphaned_free);
@@ -74,5 +77,8 @@ void *lk_record_get_ptr_passed(LK_RECORD *record);
 
 int lk_record_get_retval(LK_RECORD *record);
 void lk_record_set_retval(LK_RECORD *record, int retval);
+
+int lk_print_malloc_record(LK_RECORD *record, int fd);
+int lk_print_free_record(LK_RECORD *record, int fd);
 
 #endif /* LK_RECORD_H */
