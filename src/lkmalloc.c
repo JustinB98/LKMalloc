@@ -68,11 +68,12 @@ static LK_RECORD *create_record(LK_METADATA *metadata) {
 	return record;
 }
 
-static LK_RECORD *create_malloc_record(LK_METADATA *metadata, void *ptr, u_int flags, u_int size) {
+static LK_RECORD *create_malloc_record(LK_METADATA *metadata, void **ptr, u_int flags, u_int size) {
 	LK_RECORD *record = create_record(metadata);
 	if (record != NULL) {
 		record->record_type = 0;
-		record->ptr_passed = ptr;
+		if (ptr != NULL) record->ptr_passed = ptr;
+		else record->ptr_passed = NULL;
 		record->flags = flags;
 		record->sub_record.malloc_record.size = size;
 		record->sub_record.malloc_record.times_freed = 0;
@@ -99,15 +100,23 @@ static void *malloc_space(LK_RECORD *malloc_record, u_int size, u_int flags) {
 	return user_ptr;
 }
 
+static void insert_into_failed(LK_RECORD *record, int neg_code) {
+	record->retval = neg_code;
+	lk_data_insert_failed_record(record);
+}
+
 int __lkmalloc_internal(u_int size, void **ptr, u_int flags, char *file, const char *func, int line) {
 	init_if_needed();
 	LK_METADATA metadata;
 	fill_metadata(&metadata, line, file, func);
-	LK_RECORD *malloc_record = create_malloc_record(&metadata, *ptr, flags, size);
+	LK_RECORD *malloc_record = create_malloc_record(&metadata, ptr, flags, size);
+	if (ptr == NULL) {
+		insert_into_failed(malloc_record, -EINVAL);
+		return -EINVAL;
+	}
 	void *user_ptr = malloc_space(malloc_record, size, flags);
 	if (user_ptr == NULL) {
-		malloc_record->retval = -errno;
-		lk_data_insert_failed_record(malloc_record);
+		insert_into_failed(malloc_record, -errno);
 		return -errno;
 	}
 	lk_data_insert_malloc_record(user_ptr, malloc_record);
@@ -162,17 +171,14 @@ int __lkfree_internal(void **ptr, u_int flags, char *file, const char *func, int
 	free_record->flags = flags;
 	free_record->sub_record.free_record.ptr_requested = *ptr;
 	free_record->sub_record.free_record.ptr_freed = NULL;
-#ifdef EXTRA_CREDIT
-	free_record->sub_record.free_record.was_mmapped = 0;
-#endif
 	if (ptr == NULL || *ptr == NULL) {
-		free_record->retval = -EINVAL;
-		lk_data_insert_failed_record(free_record);
+		insert_into_failed(free_record, -EINVAL);
 		return -EINVAL;
 	}
 	void *data_found = lk_data_insert_free_record(*ptr, free_record, finder);
 	if (data_found == NULL) {
 		data_not_found(flags, file, func, line);
+		/* Do not need to insert into failed list because lk_data_insert_free_record does this */
 		free_record->retval = -EINVAL;
 		return -EINVAL;
 	}
