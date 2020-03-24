@@ -61,6 +61,18 @@ void *linked_list_find(LINKED_LIST *list, int (*finder)(void *)) {
 	return NULL;
 }
 
+int linked_list_iterate_with_count(LINKED_LIST *list, int fd, u_int flags, int (*consumer)(int, u_int, void *)) {
+	LINKED_NODE *current = list->end;
+	int count = 0;
+	while (current != NULL) {
+		int result = consumer(fd, flags, current->data);
+		if (result < 0) return -1;
+		else if (result > 0) ++count;
+		current = current->prev;
+	}
+	return count;
+}
+
 void linked_list_fini(LINKED_LIST *list, void (*onRemove)(void *)) {
 	LINKED_NODE *current = list->root;
 	while (current != NULL) {
