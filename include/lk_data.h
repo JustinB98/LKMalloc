@@ -16,7 +16,9 @@ typedef struct lk_malloc_record {
 	void *addr_returned;
 	void *malloced_ptr;
 #ifdef EXTRA_CREDIT
-	int was_mmapped;
+	int was_mmapped_before;
+	int was_mmapped_after;
+	size_t page_size;
 #endif
 } LK_MALLOC_RECORD;
 

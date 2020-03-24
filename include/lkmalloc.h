@@ -5,6 +5,10 @@
 #define LKM_INIT 0x1
 #define LKM_OVER 0x2
 #define LKM_UNDER 0x4
+#ifdef EXTRA_CREDIT
+#define LKM_PROT_BEFORE 0x8
+#define LKM_PROT_AFTER 0x10
+#endif
 
 #define LKF_REG 0x0
 #define LKF_APPROX 0x1
