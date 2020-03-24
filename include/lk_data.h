@@ -10,27 +10,30 @@ typedef struct lk_metadata {
 	struct timeval timestamp;
 } LK_METADATA;
 
-typedef struct malloc_record {
+typedef struct lk_malloc_record {
 	int times_freed;
 	u_int size;
 	void *addr_returned;
 	void *malloced_ptr;
-} MALLOC_RECORD;
+#ifdef EXTRA_CREDIT
+	int was_mmapped;
+#endif
+} LK_MALLOC_RECORD;
 
-typedef struct free_record {
+typedef struct lk_free_record {
 	void *ptr_requested;
 	void *ptr_freed;
 	int n_time_free, orphaned_free;
-} FREE_RECORD;
+} LK_FREE_RECORD;
 
 typedef struct lk_record {
 	LK_METADATA metadata;
 	int record_type, retval;
-	void **ptr_passed;
+	void *ptr_passed;
 	u_int flags;
 	union {
-		MALLOC_RECORD malloc_record;
-		FREE_RECORD free_record;
+		LK_MALLOC_RECORD malloc_record;
+		LK_FREE_RECORD free_record;
 	} sub_record;
 } LK_RECORD;
 
@@ -48,6 +51,8 @@ void lk_data_insert_malloc_record(void *ptr, LK_RECORD *malloc_record);
  * If it can't, then the completed records need to be searched
  */
 void *lk_data_insert_free_record(void *ptr, LK_RECORD *free_record, int (*finder)(void *, void *));
+
+int lk_data_iterate_through_all_records(int fd, u_int flags, int (*consumer)(int, u_int, void *));
 
 void lk_data_fini();
 

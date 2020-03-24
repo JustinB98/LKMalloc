@@ -29,7 +29,7 @@ static void *mark_as_complete(LK_RECORD *free_record, LK_RECORD *mal_record) {
 	free_record->sub_record.free_record.ptr_freed = malloced_ptr;
 	++(mal_record->sub_record.malloc_record.times_freed);
 	free_record->sub_record.free_record.n_time_free = mal_record->sub_record.malloc_record.times_freed;
-	binary_tree_remove(active_records, mal_record);
+	binary_tree_remove(active_records, mal_record->sub_record.malloc_record.addr_returned);
 	binary_tree_replace(completed_records, malloced_ptr, mal_record);
 	return malloced_ptr;
 }
@@ -80,6 +80,10 @@ static void onRemoval(void *data) {
 	} else {
 		fprintf(stderr, "WARNING - Unknown record trying to be freed");
 	}
+}
+
+int lk_data_iterate_through_all_records(int fd, u_int flags, int (*consumer)(int, u_int, void *)) {
+	return linked_list_iterate_with_count(all_records_list, fd, flags, consumer);
 }
 
 void lk_data_fini() {
