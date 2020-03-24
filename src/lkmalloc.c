@@ -6,22 +6,28 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 
+#include "lk_record.h"
 #include "lkmalloc.h"
 #include "lk_data.h"
 
 static int initialized = 0;
+static int page_size;
 
 static void lk_lib_fini() {
 	lk_data_fini();
 }
 
 static void insert_into_failed(LK_RECORD *record, int neg_code) {
-	record->retval = neg_code;
+	lk_record_set_retval(record, neg_code);
 	lk_data_insert_failed_record(record);
 }
 
 static void init_if_needed() {
 	if (!initialized) {
+		page_size = getpagesize();
+		if (page_size < 0) {
+			perror("Could not get page size of system");
+		}
 		initialized = 1;
 		lk_data_init();
 		atexit(lk_lib_fini);
@@ -44,8 +50,6 @@ static u_int get_actual_size(u_int size, u_int flags) {
 
 static size_t get_mapped_size(u_int size) {
 	size_t mapped_size = 0;
-	int page_size = getpagesize();
-	if (page_size < 0) return -1;
 	do {
 		mapped_size += page_size;
 	} while (mapped_size < size);
@@ -54,15 +58,13 @@ static size_t get_mapped_size(u_int size) {
 
 static void *create_mapped_ptr(LK_RECORD *malloc_record, u_int size) {
 	size_t mapped_size = get_mapped_size(size);
-	malloc_record->sub_record.malloc_record.page_size = mapped_size;
 	if (mapped_size < 0) return NULL;
-	void *ptr = mmap(NULL, mapped_size + getpagesize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	malloc_record->sub_record.malloc_record.malloced_ptr = ptr;
+	void *ptr = mmap(NULL, mapped_size + page_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	lk_malloc_record_set_malloced_ptr(malloc_record, ptr);
 	return ptr;
 }
 
 static int create_mapped_block(void *ptr, size_t ptr_size, int before) {
-	int page_size = getpagesize();
 	void *block_starting_ptr = before ? ptr : ptr + ptr_size;
 	return mprotect(block_starting_ptr, page_size, PROT_NONE);
 }
@@ -76,14 +78,15 @@ static int get_mmapped_ptr_before(void *ptr, size_t ptr_size) {
 }
 
 static int unmap_record(LK_RECORD *malloc_record) {
-	size_t ptr_size = malloc_record->sub_record.malloc_record.page_size;
-	return munmap(malloc_record->sub_record.malloc_record.malloced_ptr, ptr_size);
+	size_t ptr_size = get_mapped_size(lk_malloc_record_get_size(malloc_record));
+	void *ptr = lk_malloc_record_get_malloced_ptr(malloc_record);
+	return munmap(ptr, ptr_size);
 }
 
 static void *get_mapped_ptr(LK_RECORD *malloc_record, u_int size, u_int flags) {
 	void *ptr = create_mapped_ptr(malloc_record, size);
 	if (ptr == MAP_FAILED) return ptr;
-	size_t ptr_size = malloc_record->sub_record.malloc_record.page_size;
+	size_t ptr_size = get_mapped_size(size);
 	if (flags & LKM_PROT_AFTER && get_mmapped_ptr_after(ptr, ptr_size) < 0) {
 		/* Can't do anything if it failed, we have to at least attempt to clean up */
 		unmap_record(malloc_record);
@@ -95,14 +98,14 @@ static void *get_mapped_ptr(LK_RECORD *malloc_record, u_int size, u_int flags) {
 
 static void *get_mapped_user_ptr(void *mapped_ptr, size_t ptr_size, u_int size, u_int flags) {
 	if (flags & LKM_PROT_AFTER) return mapped_ptr + ptr_size - size;
-	else if (flags & LKM_PROT_BEFORE) return mapped_ptr + getpagesize();
+	else if (flags & LKM_PROT_BEFORE) return mapped_ptr + page_size;
 	fprintf(stderr, "UNKNOWN FLAG MADE IT IN: %d\n", flags);
 	return NULL;
 }
 
 static int insert_mapped_ptr(LK_RECORD *malloc_record, void **ptr, u_int size, u_int flags) {
 	void *mapped_ptr;
-	malloc_record->sub_record.malloc_record.addr_returned = NULL;
+	// malloc_record->sub_record.malloc_record.addr_returned = NULL;
 	if ((flags & LKM_PROT_BEFORE) && (flags & LKM_PROT_AFTER)) {
 		insert_into_failed(malloc_record, -EINVAL);
 		return -EINVAL;
@@ -112,11 +115,10 @@ static int insert_mapped_ptr(LK_RECORD *malloc_record, void **ptr, u_int size, u
 		insert_into_failed(malloc_record, -errno);
 		return -errno;
 	} else {
-		size_t ptr_size = malloc_record->sub_record.malloc_record.page_size;
+		size_t ptr_size = get_mapped_size(size);
 		void *user_ptr = get_mapped_user_ptr(mapped_ptr, ptr_size, size, flags);
-		malloc_record->sub_record.malloc_record.addr_returned = user_ptr;
+		lk_malloc_record_set_addr_returned(malloc_record, user_ptr);
 		*ptr = user_ptr;
-		malloc_record->retval = 0;
 		lk_data_insert_malloc_record(mapped_ptr, malloc_record);
 		return 0;
 	}
@@ -149,44 +151,11 @@ static void fill_metadata(LK_METADATA *metadata, int line_num, char *file_name, 
 	}
 }
 
-static LK_RECORD *create_record(LK_METADATA *metadata) {
-	LK_RECORD *record = malloc(sizeof(LK_RECORD));
-	if (record != NULL) {
-		record->metadata = *metadata;
-	}
-	return record;
-}
-
-static LK_RECORD *create_malloc_record(LK_METADATA *metadata, void **ptr, u_int flags, u_int size) {
-	LK_RECORD *record = create_record(metadata);
-	if (record != NULL) {
-		record->record_type = 0;
-		if (ptr != NULL) record->ptr_passed = ptr;
-		else record->ptr_passed = NULL;
-		record->flags = flags;
-		record->sub_record.malloc_record.size = size;
-		record->sub_record.malloc_record.times_freed = 0;
-#if EXTRA_CREDIT
-		record->sub_record.malloc_record.was_mmapped_before = flags & LKM_PROT_BEFORE;
-		record->sub_record.malloc_record.was_mmapped_after = flags & LKM_PROT_AFTER;
-#endif
-	}
-	return record;
-}
-
-static LK_RECORD *create_free_record(LK_METADATA *metadata) {
-	LK_RECORD *record = create_record(metadata);
-	if (record != NULL) {
-		record->record_type = 1;
-	}
-	return record;
-}
-
 static void *malloc_space(LK_RECORD *malloc_record, u_int size, u_int flags) {
 	void *malloced_ptr = get_ptr(size, flags);
-	malloc_record->sub_record.malloc_record.malloced_ptr = malloced_ptr;
+	lk_malloc_record_set_malloced_ptr(malloc_record, malloced_ptr);
 	void *user_ptr = get_user_ptr(malloced_ptr, flags);
-	malloc_record->sub_record.malloc_record.addr_returned = user_ptr;
+	lk_malloc_record_set_addr_returned(malloc_record, user_ptr);
 	return user_ptr;
 }
 
@@ -198,7 +167,6 @@ static int insert_ptr(LK_RECORD *malloc_record, void **ptr, u_int size, u_int fl
 	}
 	lk_data_insert_malloc_record(user_ptr, malloc_record);
 	*ptr = user_ptr;
-	malloc_record->retval = 0;
 	return 0;
 }
 
@@ -206,7 +174,7 @@ int __lkmalloc_internal(u_int size, void **ptr, u_int flags, char *file, const c
 	init_if_needed();
 	LK_METADATA metadata;
 	fill_metadata(&metadata, line, file, func);
-	LK_RECORD *malloc_record = create_malloc_record(&metadata, ptr, flags, size);
+	LK_RECORD *malloc_record = lk_create_malloc_record(flags, ptr, &metadata, size);
 	if (ptr == NULL) {
 		insert_into_failed(malloc_record, -EINVAL);
 		return -EINVAL;
@@ -234,25 +202,29 @@ static void data_not_found(u_int flags, char *file, const char *func, int line) 
 
 static void attempt_to_free(LK_RECORD *free_record, u_int flags) {
 	/* If pointers are different, then LKF_APPROX was part of flags */
-	if (free_record->sub_record.free_record.ptr_requested != free_record->sub_record.free_record.ptr_freed && (flags & LKF_WARN)) {
+	void *ptr_requested = lk_free_record_get_ptr_requested(free_record);
+	void *ptr_freed = lk_free_record_get_ptr_freed(free_record);
+	if (ptr_requested != ptr_freed && (flags & LKF_WARN)) {
 		fprintf(stderr, "WARNING - Freeing a pointer using LKF_APPROX\n");
 		terminate_program_if_error(flags);
 	}
-	free(free_record->sub_record.free_record.ptr_freed);
+	free(ptr_freed);
 }
 
 static int finder(void *fr, void *data) {
 	LK_RECORD *free_record = fr;
 	LK_RECORD *malloc_record = data;
-	if (malloc_record->sub_record.malloc_record.addr_returned == free_record->sub_record.free_record.ptr_requested) {
+	void *addr_returned = lk_malloc_record_get_addr_returned(malloc_record);
+	void *ptr_requested = lk_free_record_get_ptr_requested(free_record);
+	if (addr_returned == ptr_requested) {
 		return 1;
-	} else if ((free_record->flags & LKF_APPROX) == 0) {
+	} else if ((lk_record_get_flags(free_record) & LKF_APPROX) == 0) {
 		return 0;
 	}
-	u_int ptr_size = malloc_record->sub_record.malloc_record.size;
-	void *start_ptr = malloc_record->sub_record.malloc_record.addr_returned;
+	u_int ptr_size = lk_malloc_record_get_size(malloc_record);
+	void *start_ptr = addr_returned;
 	void *end_ptr = start_ptr + ptr_size;
-	void *ptr_to_find = free_record->sub_record.free_record.ptr_requested;
+	void *ptr_to_find = ptr_requested;
 	return start_ptr < ptr_to_find && ptr_to_find < end_ptr;
 }
 
@@ -260,24 +232,20 @@ int __lkfree_internal(void **ptr, u_int flags, char *file, const char *func, int
 	init_if_needed();
 	LK_METADATA metadata;
 	fill_metadata(&metadata, line, file, func);
-	LK_RECORD *free_record = create_free_record(&metadata);
-	free_record->ptr_passed = *ptr;
-	free_record->flags = flags;
-	free_record->sub_record.free_record.ptr_requested = *ptr;
-	free_record->sub_record.free_record.ptr_freed = NULL;
+	LK_RECORD *free_record = lk_create_record(1, flags, ptr, &metadata);
 	if (ptr == NULL || *ptr == NULL) {
 		insert_into_failed(free_record, -EINVAL);
 		return -EINVAL;
 	}
+	lk_free_record_set_ptr_requested(free_record, *ptr);
 	void *data_found = lk_data_insert_free_record(*ptr, free_record, finder);
 	if (data_found == NULL) {
 		data_not_found(flags, file, func, line);
 		/* Do not need to insert into failed list because lk_data_insert_free_record does this */
-		free_record->retval = -EINVAL;
+		lk_record_set_retval(free_record, -EINVAL);
 		return -EINVAL;
 	}
 	attempt_to_free(free_record, flags);
-	free_record->retval = 0;
 	return 0;
 }
 
@@ -293,43 +261,38 @@ static int write_buf(int fd, void *buf, size_t size) {
 	return result < 0 ? -1 : 0;
 }
 
-static int should_malloc_record_print(LK_MALLOC_RECORD *malloc_record, u_int flags) {
-	if ((flags & LKR_SERIOUS) && malloc_record->times_freed == 0) return 1;
-	else if ((flags & LKR_MATCH) && malloc_record->times_freed == 1) return 1;
-	else if ((flags & LKR_DOUBLE_FREE) && malloc_record->times_freed > 1) return 1;
+static int should_malloc_record_print(LK_RECORD *malloc_record, u_int flags) {
+	int times_freed = lk_malloc_record_get_times_freed(malloc_record);
+	if ((flags & LKR_SERIOUS) && times_freed == 0) return 1;
+	else if ((flags & LKR_MATCH) && times_freed == 1) return 1;
+	else if ((flags & LKR_DOUBLE_FREE) && times_freed > 1) return 1;
 	else return 0;
 }
 
-static int lk_print_malloc_record(int fd, u_int flags, LK_RECORD *record) {
-	if (!should_malloc_record_print(&record->sub_record.malloc_record, flags)) return 0;
-	LK_MALLOC_RECORD *malloc_record = &record->sub_record.malloc_record;
-	return dprintf(fd, "%d,%s,%s,%d,%lu,%p,%d,%u,%p\n",
-				   record->record_type, record->metadata.file_name, record->metadata.function_name,
-				   record->metadata.line_num, record->metadata.timestamp.tv_sec + record->metadata.timestamp.tv_usec,
-				   record->ptr_passed, record->retval, malloc_record->size,
-				   malloc_record->addr_returned);
+static int print_malloc_record(int fd, u_int flags, LK_RECORD *record) {
+	if (!should_malloc_record_print(record, flags)) return 0;
+	return lk_print_malloc_record(record, fd);
 }
 
-static int should_free_record_print(LK_FREE_RECORD *free_record, u_int flags) {
-	if ((flags & LKR_MATCH) && free_record->ptr_freed != NULL) return 1;
-	else if ((flags & LKR_BAD_FREE) &&
-			  free_record->ptr_requested != free_record->ptr_freed) return 1;
-	else if ((flags & LKR_ORPHAN_FREE) && free_record->ptr_freed == NULL) return 1;
+static int should_free_record_print(LK_RECORD *free_record, u_int flags) {
+	void *ptr_freed = lk_free_record_get_ptr_freed(free_record);
+	void *ptr_requested = lk_free_record_get_ptr_requested(free_record);
+	if ((flags & LKR_MATCH) && ptr_freed != NULL) return 1;
+	else if ((flags & LKR_BAD_FREE) && ptr_requested != ptr_freed) return 1;
+	else if ((flags & LKR_ORPHAN_FREE) && ptr_freed == NULL) return 1;
 	else return 0;
 }
 
-static int lk_print_free_record(int fd, u_int flags, LK_RECORD *record) {
-	if (!should_free_record_print(&record->sub_record.free_record, flags)) return 0;
-	return dprintf(fd, "%d,%s,%s,%d,%lu,%p,%d,%u\n",
-				   record->record_type, record->metadata.file_name, record->metadata.function_name,
-				   record->metadata.line_num, record->metadata.timestamp.tv_sec + record->metadata.timestamp.tv_usec,
-				   record->ptr_passed, record->retval, record->flags);
+static int print_free_record(int fd, u_int flags, LK_RECORD *record) {
+	if (!should_free_record_print(record, flags)) return 0;
+	return lk_print_free_record(record, fd);
 }
 
 static int print_record(int fd, u_int flags, void *data) {
 	LK_RECORD *record = data;
-	if (record->record_type == 0) return lk_print_malloc_record(fd, flags, record);
-	else if (record->record_type == 1) return lk_print_free_record(fd, flags, record);
+	int record_type = lk_record_get_record_type(record);
+	if (record_type == 0) return print_malloc_record(fd, flags, record);
+	else if (record_type == 1) return print_free_record(fd, flags, record);
 	else fprintf(stderr, "ERROR UNKNOWN RECORD TYPE\n");
 	return -1;
 }

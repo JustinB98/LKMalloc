@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "lk_record.h"
 #include "lk_data.h"
 #include "linked_list.h"
 #include "binary_tree.h"
@@ -26,32 +27,24 @@ void lk_data_insert_failed_record(LK_RECORD *record) {
 
 static void *mark_as_complete(LK_RECORD *free_record, LK_RECORD *mal_record) {
 	void *malloced_ptr = mal_record->sub_record.malloc_record.malloced_ptr;
-	free_record->sub_record.free_record.ptr_freed = malloced_ptr;
-	++(mal_record->sub_record.malloc_record.times_freed);
-	free_record->sub_record.free_record.n_time_free = mal_record->sub_record.malloc_record.times_freed;
+	lk_free_record_set_ptr_freed(free_record, malloced_ptr);
+	lk_malloc_record_increment_times_freed(mal_record);
+	lk_free_record_set_times_freed(free_record, 1);
 	binary_tree_remove(active_records, mal_record->sub_record.malloc_record.addr_returned);
 	binary_tree_replace(completed_records, malloced_ptr, mal_record);
 	return malloced_ptr;
 }
 
 static void mark_as_double_free(LK_RECORD *free_record, LK_RECORD *malloc_record) {
-	int times_freed = malloc_record->sub_record.malloc_record.times_freed + 1;
-	malloc_record->sub_record.malloc_record.times_freed = times_freed;
-	free_record->sub_record.free_record.n_time_free = times_freed;
-	free_record->sub_record.free_record.orphaned_free = 0;
-}
-
-static void mark_as_orphaned_free(LK_RECORD *free_record) {
-	free_record->sub_record.free_record.n_time_free = 0;
-	free_record->sub_record.free_record.orphaned_free = 1;
+	lk_malloc_record_increment_times_freed(malloc_record);
+	int times_freed = lk_malloc_record_get_times_freed(malloc_record);
+	lk_free_record_set_times_freed(free_record, times_freed);
 }
 
 void *lk_data_insert_free_record(void *ptr, LK_RECORD *free_record, int (*finder)(void *, void *)) {
 	linked_list_insert(all_records_list, free_record);
 	LK_RECORD *mal_record = binary_tree_find_with_function(active_records, ptr, free_record, finder);
 	if (mal_record != NULL) {
-		free_record->sub_record.free_record.n_time_free = 1;
-		free_record->sub_record.free_record.orphaned_free = 0;
 		return mark_as_complete(free_record, mal_record);
 	}
 	mal_record = binary_tree_find_with_function(completed_records, ptr, free_record, finder);
@@ -59,7 +52,7 @@ void *lk_data_insert_free_record(void *ptr, LK_RECORD *free_record, int (*finder
 		mark_as_double_free(free_record, mal_record);
 		return NULL;
 	}
-	mark_as_orphaned_free(free_record);
+	lk_free_record_set_orphaned_free(free_record, 1);
 	return NULL;
 }
 
@@ -73,12 +66,13 @@ static void free_free_record(LK_RECORD *free_record) {
 
 static void onRemoval(void *data) {
 	LK_RECORD *record = data;
-	if (record->record_type == 0) {
+	int record_type = lk_record_get_record_type(record);
+	if (record_type == 0) {
 		free_malloc_record(record);
-	} else if (record->record_type == 1) {
+	} else if (record_type == 1) {
 		free_free_record(record);
 	} else {
-		fprintf(stderr, "WARNING - Unknown record trying to be freed");
+		fprintf(stderr, "WARNING - Unknown record trying to be freed: %d\n", record_type);
 	}
 }
 
