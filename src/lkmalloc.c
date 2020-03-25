@@ -80,7 +80,7 @@ static int get_mmapped_ptr_before(void *ptr, size_t ptr_size) {
 static int unmap_record(LK_RECORD *malloc_record) {
 	size_t ptr_size = get_mapped_size(lk_malloc_record_get_size(malloc_record));
 	void *ptr = lk_malloc_record_get_malloced_ptr(malloc_record);
-	return munmap(ptr, ptr_size);
+	return munmap(ptr, ptr_size + page_size);
 }
 
 static void *get_mapped_ptr(LK_RECORD *malloc_record, u_int size, u_int flags) {
@@ -200,7 +200,7 @@ static void data_not_found(u_int flags, char *file, const char *func, int line) 
 	terminate_program_if_error(flags);
 }
 
-static void attempt_to_free(LK_RECORD *free_record, u_int flags) {
+static int attempt_to_free(LK_RECORD *free_record, u_int flags, LK_RECORD *malloc_record) {
 	/* If pointers are different, then LKF_APPROX was part of flags */
 	void *ptr_requested = lk_free_record_get_ptr_requested(free_record);
 	void *ptr_freed = lk_free_record_get_ptr_freed(free_record);
@@ -208,7 +208,14 @@ static void attempt_to_free(LK_RECORD *free_record, u_int flags) {
 		fprintf(stderr, "WARNING - Freeing a pointer using LKF_APPROX\n");
 		terminate_program_if_error(flags);
 	}
+#ifdef EXTRA_CREDIT
+	u_int malloc_flags = lk_record_get_flags(malloc_record);
+	if (malloc_flags & (LKM_PROT_BEFORE | LKM_PROT_AFTER)) {
+		return unmap_record(malloc_record);
+	}
+#endif
 	free(ptr_freed);
+	return 0;
 }
 
 static int finder(void *fr, void *data) {
@@ -238,15 +245,16 @@ int __lkfree_internal(void **ptr, u_int flags, char *file, const char *func, int
 		return -EINVAL;
 	}
 	lk_free_record_set_ptr_requested(free_record, *ptr);
-	void *data_found = lk_data_insert_free_record(*ptr, free_record, finder);
+	LK_RECORD *data_found = lk_data_insert_free_record(*ptr, free_record, finder);
 	if (data_found == NULL) {
 		data_not_found(flags, file, func, line);
 		/* Do not need to insert into failed list because lk_data_insert_free_record does this */
 		lk_record_set_retval(free_record, -EINVAL);
 		return -EINVAL;
 	}
-	attempt_to_free(free_record, flags);
-	return 0;
+	int retval = attempt_to_free(free_record, flags, data_found);
+	lk_record_set_retval(free_record, retval);
+	return retval;
 }
 
 static int write_buf(int fd, void *buf, size_t size) {
@@ -293,7 +301,7 @@ static int print_record(int fd, u_int flags, void *data) {
 	int record_type = lk_record_get_record_type(record);
 	if (record_type == 0) return print_malloc_record(fd, flags, record);
 	else if (record_type == 1) return print_free_record(fd, flags, record);
-	else fprintf(stderr, "ERROR UNKNOWN RECORD TYPE\n");
+	else fprintf(stderr, "ERROR UNKNOWN RECORD TYPE: %d\n", record_type);
 	return -1;
 }
 
