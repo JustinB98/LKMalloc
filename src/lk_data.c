@@ -26,13 +26,13 @@ void lk_data_insert_failed_record(LK_RECORD *record) {
 }
 
 static void *mark_as_complete(LK_RECORD *free_record, LK_RECORD *mal_record) {
-	void *malloced_ptr = mal_record->sub_record.malloc_record.malloced_ptr;
+	void *malloced_ptr = lk_malloc_record_get_malloced_ptr(mal_record);
 	lk_free_record_set_ptr_freed(free_record, malloced_ptr);
 	lk_malloc_record_increment_times_freed(mal_record);
 	lk_free_record_set_times_freed(free_record, 1);
-	binary_tree_remove(active_records, mal_record->sub_record.malloc_record.addr_returned);
+	binary_tree_remove(active_records, lk_malloc_record_get_addr_returned(mal_record));
 	binary_tree_replace(completed_records, malloced_ptr, mal_record);
-	return malloced_ptr;
+	return mal_record;
 }
 
 static void mark_as_double_free(LK_RECORD *free_record, LK_RECORD *malloc_record) {
@@ -41,7 +41,7 @@ static void mark_as_double_free(LK_RECORD *free_record, LK_RECORD *malloc_record
 	lk_free_record_set_times_freed(free_record, times_freed);
 }
 
-void *lk_data_insert_free_record(void *ptr, LK_RECORD *free_record, int (*finder)(void *, void *)) {
+LK_RECORD *lk_data_insert_free_record(void *ptr, LK_RECORD *free_record, int (*finder)(void *, void *)) {
 	linked_list_insert(all_records_list, free_record);
 	LK_RECORD *mal_record = binary_tree_find_with_function(active_records, ptr, free_record, finder);
 	if (mal_record != NULL) {

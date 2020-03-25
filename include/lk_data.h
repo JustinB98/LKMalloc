@@ -14,7 +14,7 @@ void lk_data_insert_malloc_record(void *ptr, LK_RECORD *malloc_record);
  * Will attempt to look for a malloc record in the active heap
  * If it can't, then the completed records need to be searched
  */
-void *lk_data_insert_free_record(void *ptr, LK_RECORD *free_record, int (*finder)(void *, void *));
+LK_RECORD *lk_data_insert_free_record(void *ptr, LK_RECORD *free_record, int (*finder)(void *, void *));
 
 int lk_data_iterate_through_all_records(int fd, u_int flags, int (*consumer)(int, u_int, void *));
 
