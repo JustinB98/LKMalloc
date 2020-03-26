@@ -11,15 +11,17 @@ typedef struct lk_metadata {
 } LK_METADATA;
 
 typedef struct lk_malloc_record {
-	int times_freed;
+	int times_freed, freed_approx;
 	u_int size;
+	/* Ptr that gets returned to the user; used as key to the data structures */
 	void *addr_returned;
 	void *malloced_ptr;
 } LK_MALLOC_RECORD;
 
 typedef struct lk_free_record {
 	void *ptr_requested;
-	void *ptr_freed;
+	/* Ptr that lkmalloc returned */
+	void *user_ptr_returned;
 	int times_freed, orphaned_free;
 } LK_FREE_RECORD;
 
@@ -59,11 +61,14 @@ void lk_malloc_record_set_addr_returned(LK_RECORD *record, void *addr);
 void *lk_malloc_record_get_malloced_ptr(LK_RECORD *record);
 void lk_malloc_record_set_malloced_ptr(LK_RECORD *record, void *malloced_ptr);
 
+int lk_malloc_record_was_freed_approx(LK_RECORD *record);
+void lk_malloc_record_set_freed_approx(LK_RECORD *record, int was_free_approx);
+
 void *lk_free_record_get_ptr_requested(LK_RECORD *record);
 void lk_free_record_set_ptr_requested(LK_RECORD *record, void *ptr_requested);
 
-void *lk_free_record_get_ptr_freed(LK_RECORD *record);
-void lk_free_record_set_ptr_freed(LK_RECORD *record, void *ptr_freed);
+void *lk_free_record_get_user_ptr_returned(LK_RECORD *record);
+void lk_free_record_set_user_ptr_returned(LK_RECORD *record, void *ptr_returned);
 
 int lk_free_record_get_times_freed(LK_RECORD *record);
 void lk_free_record_set_times_freed(LK_RECORD *record, int times_freed);

@@ -78,6 +78,14 @@ void *lk_malloc_record_get_malloced_ptr(LK_RECORD *record) {
 	return MALLOC_RECORD(record).malloced_ptr;
 }
 
+int lk_malloc_record_was_freed_approx(LK_RECORD *record) {
+	return MALLOC_RECORD(record).freed_approx;
+}
+
+void lk_malloc_record_set_freed_approx(LK_RECORD *record, int was_free_approx) {
+	MALLOC_RECORD(record).freed_approx = was_free_approx;
+}
+
 void lk_malloc_record_set_malloced_ptr(LK_RECORD *record, void *malloced_ptr) {
 	MALLOC_RECORD(record).malloced_ptr = malloced_ptr;
 }
@@ -90,12 +98,12 @@ void lk_free_record_set_ptr_requested(LK_RECORD *record, void *ptr_requested) {
 	FREE_RECORD(record).ptr_requested = ptr_requested;
 }
 
-void *lk_free_record_get_ptr_freed(LK_RECORD *record) {
-	return FREE_RECORD(record).ptr_freed;
+void *lk_free_record_get_user_ptr_returned(LK_RECORD *record) {
+	return FREE_RECORD(record).user_ptr_returned;
 }
 
-void lk_free_record_set_ptr_freed(LK_RECORD *record, void *ptr_freed) {
-	FREE_RECORD(record).ptr_freed = ptr_freed;
+void lk_free_record_set_user_ptr_returned(LK_RECORD *record, void *ptr_returned) {
+	FREE_RECORD(record).user_ptr_returned = ptr_returned;
 }
 
 int lk_free_record_get_times_freed(LK_RECORD *record) {
