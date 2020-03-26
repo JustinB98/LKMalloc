@@ -298,9 +298,11 @@ static int should_free_record_print(LK_RECORD *free_record, u_int flags) {
 	void *ptr_user_got = lk_free_record_get_user_ptr_returned(free_record);
 	void *ptr_requested = lk_free_record_get_ptr_requested(free_record);
 	int was_freed_approx = ptr_requested != ptr_user_got;
+	int time_freed = lk_free_record_get_times_freed(free_record);
 	if ((flags & LKR_MATCH) && ptr_user_got != NULL) return 1;
 	else if ((flags & (LKR_BAD_FREE | LKR_APPROX)) && was_freed_approx) return 1;
 	else if ((flags & LKR_ORPHAN_FREE) && ptr_user_got == NULL) return 1;
+	else if ((flags & LKR_DOUBLE_FREE) && time_freed > 1) return 1;
 	else return 0;
 }
 
