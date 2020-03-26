@@ -65,25 +65,29 @@ static size_t get_mapped_size(u_int size) {
 	return mapped_size;
 }
 
-static void *create_mapped_ptr(LK_RECORD *malloc_record, u_int size) {
+static void *create_mapped_ptr(LK_RECORD *malloc_record, u_int size, u_int flags) {
 	size_t mapped_size = get_mapped_size(size);
 	if (mapped_size < 0) return NULL;
-	void *ptr = mmap(NULL, mapped_size + page_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	size_t protected_block_size = 0;
+	if (flags & LKM_PROT_BEFORE) protected_block_size += page_size;
+	if (flags & LKM_PROT_AFTER) protected_block_size += page_size;
+	void *ptr = mmap(NULL, mapped_size + protected_block_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	lk_malloc_record_set_malloced_ptr(malloc_record, ptr);
 	return ptr;
 }
 
-static int create_mapped_block(void *ptr, size_t ptr_size, int before) {
-	void *block_starting_ptr = before ? ptr : ptr + ptr_size;
-	return mprotect(block_starting_ptr, page_size, PROT_NONE);
-}
-
-static int get_mmapped_ptr_after(void *ptr, size_t ptr_size) {
-	return create_mapped_block(ptr, ptr_size, 0);
-}
-
-static int get_mmapped_ptr_before(void *ptr, size_t ptr_size) {
-	return create_mapped_block(ptr, ptr_size, 1);
+static int protect_blocks(void *ptr, size_t ptr_size, u_int flags) {
+	int ret = 0;
+	if (flags & LKM_PROT_BEFORE) {
+		ret = mprotect(ptr, page_size, PROT_NONE);
+		if (ret < 0) return ret;
+		ptr += page_size;
+	}
+	if (flags & LKM_PROT_AFTER) {
+		ret = mprotect(ptr + ptr_size, page_size, PROT_NONE);
+		if (ret < 0) return ret;
+	}
+	return ret;
 }
 
 static int unmap_record(LK_RECORD *malloc_record) {
@@ -93,21 +97,22 @@ static int unmap_record(LK_RECORD *malloc_record) {
 }
 
 static void *get_mapped_ptr(LK_RECORD *malloc_record, u_int size, u_int flags) {
-	void *ptr = create_mapped_ptr(malloc_record, size);
+	void *ptr = create_mapped_ptr(malloc_record, size, flags);
 	if (ptr == MAP_FAILED) return ptr;
 	size_t ptr_size = get_mapped_size(size);
-	if (flags & LKM_PROT_AFTER && get_mmapped_ptr_after(ptr, ptr_size) < 0) {
-		/* Can't do anything if it failed, we have to at least attempt to clean up */
+	int ret = protect_blocks(ptr, ptr_size, flags);
+	if (ret < 0) {
+		/* mprotect failed, try to clean up. If we can't unmap, then there's */
+		/* nothing we can do */
 		unmap_record(malloc_record);
-	} else if (flags & LKM_PROT_BEFORE && get_mmapped_ptr_before(ptr, ptr_size) < 0) {
-		unmap_record(malloc_record);
+		return NULL;
 	}
 	return ptr;
 }
 
 static void *get_mapped_user_ptr(void *mapped_ptr, size_t ptr_size, u_int size, u_int flags) {
-	if (flags & LKM_PROT_AFTER) return mapped_ptr + ptr_size - size;
-	else if (flags & LKM_PROT_BEFORE) return mapped_ptr + page_size;
+	if (flags & LKM_PROT_BEFORE) return mapped_ptr + page_size;
+	else if (flags & LKM_PROT_AFTER) return mapped_ptr + ptr_size - size;
 	fprintf(stderr, "UNKNOWN FLAG MADE IT IN: %d\n", flags);
 	return NULL;
 }
@@ -122,6 +127,7 @@ static int insert_mapped_ptr(LK_RECORD *malloc_record, void **ptr, u_int size, u
 	} else {
 		size_t ptr_size = get_mapped_size(actual_size);
 		void *user_ptr = get_mapped_user_ptr(mapped_ptr, ptr_size, actual_size, flags);
+		printf("mapped ptr: %p\nuser_ptr%p\n", mapped_ptr, user_ptr);
 		fill_around_malloced_ptr(user_ptr, actual_size, flags);
 		user_ptr = get_user_ptr(user_ptr, flags);
 		lk_malloc_record_set_addr_returned(malloc_record, user_ptr);
@@ -170,10 +176,12 @@ static int insert_ptr(LK_RECORD *malloc_record, void **ptr, u_int size, u_int fl
 	return 0;
 }
 
-static int malloc_request_has_invalid_args(u_int flags, void **ptr) {
+static int malloc_request_has_invalid_args(u_int flags, u_int size, void **ptr) {
 	if (ptr == NULL) return 1;
 #ifdef EXTRA_CREDIT
-	if ((flags & LKM_PROT_BEFORE) && (flags & LKM_PROT_AFTER)) return 1;
+	size = get_actual_size(size, flags);
+	int multiple_of_page_size = size & (page_size - 1);
+	if ((flags & LKM_PROT_BEFORE) && (flags & LKM_PROT_AFTER) && multiple_of_page_size) return 1;
 #endif
 	return 0;
 }
@@ -183,7 +191,7 @@ int __lkmalloc_internal(u_int size, void **ptr, u_int flags, char *file, const c
 	LK_METADATA metadata;
 	fill_metadata(&metadata, line, file, func);
 	LK_RECORD *malloc_record = lk_create_malloc_record(flags, ptr, &metadata, size);
-	if (malloc_request_has_invalid_args(flags, ptr)) {
+	if (malloc_request_has_invalid_args(flags, size, ptr)) {
 		insert_into_failed(malloc_record, -EINVAL);
 		return -EINVAL;
 	}
