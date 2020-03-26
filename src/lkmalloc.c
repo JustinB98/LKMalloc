@@ -163,7 +163,7 @@ static int insert_ptr(LK_RECORD *malloc_record, void **ptr, u_int size, u_int fl
 	void *user_ptr = malloc_space(malloc_record, size, flags);
 	if (user_ptr == NULL) {
 		insert_into_failed(malloc_record, -errno);
-		return -errno;
+		return -ENOMEM;
 	}
 	lk_data_insert_malloc_record(user_ptr, malloc_record);
 	*ptr = user_ptr;
