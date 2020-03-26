@@ -22,10 +22,13 @@
 #define LKR_BAD_FREE 0x4
 #define LKR_ORPHAN_FREE 0x8
 #define LKR_DOUBLE_FREE 0x10
+#define LKR_APPROX 0x20
 
 #define lkmalloc(size, ptr, flags) __lkmalloc_internal((size), (ptr), (flags), __FILE__, __func__, __LINE__)
 #define lkfree(ptr, flags) __lkfree_internal((ptr), (flags), __FILE__, __func__, __LINE__)
 #define lkreport(fd, flags) __lkreport_internal((fd), (flags))
+
+#include <stdlib.h>
 
 int __lkmalloc_internal(u_int size, void **ptr, u_int flags, char *file, const char *func, int line);
 
