@@ -170,7 +170,7 @@ static int insert_ptr(LK_RECORD *malloc_record, void **ptr, u_int size, u_int fl
 	return 0;
 }
 
-int malloc_request_has_invalid_args(u_int flags, void **ptr) {
+static int malloc_request_has_invalid_args(u_int flags, void **ptr) {
 	if (ptr == NULL) return 1;
 #ifdef EXTRA_CREDIT
 	if ((flags & LKM_PROT_BEFORE) && (flags & LKM_PROT_AFTER)) return 1;
@@ -211,8 +211,10 @@ static void data_not_found(u_int flags, char *file, const char *func, int line) 
 static int attempt_to_free(LK_RECORD *free_record, u_int flags, LK_RECORD *malloc_record) {
 	/* If pointers are different, then LKF_APPROX was part of flags */
 	void *ptr_requested = lk_free_record_get_ptr_requested(free_record);
-	void *ptr_freed = lk_free_record_get_ptr_freed(free_record);
-	if (ptr_requested != ptr_freed && (flags & LKF_WARN)) {
+	void *ptr_user_got = lk_free_record_get_user_ptr_returned(free_record);
+	int was_freed_approx = ptr_requested != ptr_user_got;
+	lk_malloc_record_set_freed_approx(malloc_record, was_freed_approx);
+	if (was_freed_approx && (flags & LKF_WARN)) {
 		fprintf(stderr, "WARNING - Freeing a pointer using LKF_APPROX\n");
 		terminate_program_if_error(flags);
 	}
@@ -222,7 +224,8 @@ static int attempt_to_free(LK_RECORD *free_record, u_int flags, LK_RECORD *mallo
 		return unmap_record(malloc_record);
 	}
 #endif
-	free(ptr_freed);
+	void *malloced_ptr = lk_malloc_record_get_malloced_ptr(malloc_record);
+	free(malloced_ptr);
 	return 0;
 }
 
@@ -246,12 +249,20 @@ static int finder(void *fr, void *data) {
 	return start_ptr <= ptr_to_find && ptr_to_find < end_ptr;
 }
 
+static int free_request_has_invalid_args(void **ptr, u_int flags) {
+	if (ptr == NULL || *ptr == NULL) return 1;
+	else if ((flags & LKF_WARN) && (flags && LKF_APPROX) == 0) return 1;
+	/* If LKF_ERROR is present but not LKF_UNKNOWN or LKF_WARN, then it's invalid */
+	else if ((flags & LKF_ERROR) && (flags && (LKF_UNKNOWN | LKF_WARN)) == 0) return 1;
+	return 0;
+}
+
 int __lkfree_internal(void **ptr, u_int flags, char *file, const char *func, int line) {
 	init_if_needed();
 	LK_METADATA metadata;
 	fill_metadata(&metadata, line, file, func);
 	LK_RECORD *free_record = lk_create_record(1, flags, ptr, &metadata);
-	if (ptr == NULL || *ptr == NULL) {
+	if (free_request_has_invalid_args(ptr, flags)) {
 		insert_into_failed(free_record, -EINVAL);
 		return -EINVAL;
 	}
@@ -260,8 +271,8 @@ int __lkfree_internal(void **ptr, u_int flags, char *file, const char *func, int
 	if (data_found == NULL) {
 		data_not_found(flags, file, func, line);
 		/* Do not need to insert into failed list because lk_data_insert_free_record does this */
-		lk_record_set_retval(free_record, -EINVAL);
-		return -EINVAL;
+		lk_record_set_retval(free_record, -ENOENT);
+		return -ENOENT;
 	}
 	int retval = attempt_to_free(free_record, flags, data_found);
 	lk_record_set_retval(free_record, retval);
@@ -270,9 +281,11 @@ int __lkfree_internal(void **ptr, u_int flags, char *file, const char *func, int
 
 static int should_malloc_record_print(LK_RECORD *malloc_record, u_int flags) {
 	int times_freed = lk_malloc_record_get_times_freed(malloc_record);
+	int was_freed_approx = lk_malloc_record_was_freed_approx(malloc_record);
 	if ((flags & LKR_SERIOUS) && times_freed == 0) return 1;
 	else if ((flags & LKR_MATCH) && times_freed == 1) return 1;
 	else if ((flags & LKR_DOUBLE_FREE) && times_freed > 1) return 1;
+	else if ((flags & LKR_APPROX) && was_freed_approx) return 1;
 	else return 0;
 }
 
@@ -282,11 +295,12 @@ static int print_malloc_record(int fd, u_int flags, LK_RECORD *record) {
 }
 
 static int should_free_record_print(LK_RECORD *free_record, u_int flags) {
-	void *ptr_freed = lk_free_record_get_ptr_freed(free_record);
+	void *ptr_user_got = lk_free_record_get_user_ptr_returned(free_record);
 	void *ptr_requested = lk_free_record_get_ptr_requested(free_record);
-	if ((flags & LKR_MATCH) && ptr_freed != NULL) return 1;
-	else if ((flags & LKR_BAD_FREE) && ptr_requested != ptr_freed) return 1;
-	else if ((flags & LKR_ORPHAN_FREE) && ptr_freed == NULL) return 1;
+	int was_freed_approx = ptr_requested != ptr_user_got;
+	if ((flags & LKR_MATCH) && ptr_user_got != NULL) return 1;
+	else if ((flags & (LKR_BAD_FREE | LKR_APPROX)) && was_freed_approx) return 1;
+	else if ((flags & LKR_ORPHAN_FREE) && ptr_user_got == NULL) return 1;
 	else return 0;
 }
 
@@ -308,9 +322,16 @@ static int print_header(int fd) {
 	return dprintf(fd, LK_REPORT_HEADER);
 }
 
+static int report_request_has_invalid_args(u_int flags) {
+	if ((flags & LKR_APPROX) && (flags & LKR_BAD_FREE)) return 1;
+	/* Left to add more invalid flags */
+	return 0;
+}
+
 int __lkreport_internal(int fd, u_int flags) {
 	init_if_needed();
 	if (flags == LKR_NONE) return 0;
+	else if (report_request_has_invalid_args(flags)) return -EINVAL;
 	int result = print_header(fd);
 	if (result < 0) goto __lk_report_internal_finish;
 	result = lk_data_iterate_through_all_records(fd, flags, print_record);

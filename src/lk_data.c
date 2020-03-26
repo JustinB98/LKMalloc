@@ -26,12 +26,12 @@ void lk_data_insert_failed_record(LK_RECORD *record) {
 }
 
 static void *mark_as_complete(LK_RECORD *free_record, LK_RECORD *mal_record) {
-	void *malloced_ptr = lk_malloc_record_get_malloced_ptr(mal_record);
-	lk_free_record_set_ptr_freed(free_record, malloced_ptr);
+	void *addr_returned = lk_malloc_record_get_addr_returned(mal_record);
+	lk_free_record_set_user_ptr_returned(free_record, addr_returned);
 	lk_malloc_record_increment_times_freed(mal_record);
 	lk_free_record_set_times_freed(free_record, 1);
 	binary_tree_remove(active_records, lk_malloc_record_get_addr_returned(mal_record));
-	binary_tree_replace(completed_records, malloced_ptr, mal_record);
+	binary_tree_replace(completed_records, addr_returned, mal_record);
 	return mal_record;
 }
 
