@@ -39,6 +39,13 @@ static void fill_around_malloced_ptr(char *ptr, u_int size, u_int flags) {
 	if (flags & LKM_OVER) ptr[size] = 0x5a;
 }
 
+static void *get_user_ptr(void *malloced_ptr, u_int flags) {
+	if (malloced_ptr == NULL) return NULL;
+	void *user_ptr = malloced_ptr;
+	if (flags & LKM_UNDER) user_ptr = malloced_ptr + 8;
+	return user_ptr;
+}
+
 static u_int get_actual_size(u_int size, u_int flags) {
 	u_int new_size = size;
 	if (flags & LKM_OVER) new_size += 8;
@@ -104,19 +111,22 @@ static void *get_mapped_user_ptr(void *mapped_ptr, size_t ptr_size, u_int size, 
 }
 
 static int insert_mapped_ptr(LK_RECORD *malloc_record, void **ptr, u_int size, u_int flags) {
+	u_int actual_size = get_actual_size(size, flags);
 	void *mapped_ptr;
 	// malloc_record->sub_record.malloc_record.addr_returned = NULL;
 	if ((flags & LKM_PROT_BEFORE) && (flags & LKM_PROT_AFTER)) {
 		insert_into_failed(malloc_record, -EINVAL);
 		return -EINVAL;
 	}
-	mapped_ptr = get_mapped_ptr(malloc_record, size, flags);
+	mapped_ptr = get_mapped_ptr(malloc_record, actual_size, flags);
 	if (mapped_ptr == MAP_FAILED) {
 		insert_into_failed(malloc_record, -errno);
 		return -errno;
 	} else {
-		size_t ptr_size = get_mapped_size(size);
-		void *user_ptr = get_mapped_user_ptr(mapped_ptr, ptr_size, size, flags);
+		size_t ptr_size = get_mapped_size(actual_size);
+		void *user_ptr = get_mapped_user_ptr(mapped_ptr, ptr_size, actual_size, flags);
+		fill_around_malloced_ptr(user_ptr, size, flags);
+		user_ptr = get_user_ptr(user_ptr, flags);
 		lk_malloc_record_set_addr_returned(malloc_record, user_ptr);
 		*ptr = user_ptr;
 		lk_data_insert_malloc_record(mapped_ptr, malloc_record);
@@ -133,13 +143,6 @@ static void *get_ptr(u_int size, u_int flags) {
 	if (flags & LKM_INIT) memset(malloced_ptr, 0, size);
 	fill_around_malloced_ptr(malloced_ptr, size, flags);
 	return malloced_ptr;
-}
-
-static void *get_user_ptr(void *malloced_ptr, u_int flags) {
-	if (malloced_ptr == NULL) return NULL;
-	void *user_ptr = malloced_ptr;
-	if (flags & LKM_UNDER) user_ptr = malloced_ptr + 8;
-	return user_ptr;
 }
 
 static void fill_metadata(LK_METADATA *metadata, int line_num, char *file_name, const char *function_name) {
@@ -229,10 +232,13 @@ static int finder(void *fr, void *data) {
 		return 0;
 	}
 	u_int ptr_size = lk_malloc_record_get_size(malloc_record);
+	u_int malloc_flags = lk_record_get_flags(malloc_record);
 	void *start_ptr = addr_returned;
+	if (malloc_flags & LKM_UNDER) start_ptr -= 8;
 	void *end_ptr = start_ptr + ptr_size;
+	if (malloc_flags & LKM_OVER) end_ptr += 8;
 	void *ptr_to_find = ptr_requested;
-	return start_ptr < ptr_to_find && ptr_to_find < end_ptr;
+	return start_ptr <= ptr_to_find && ptr_to_find < end_ptr;
 }
 
 int __lkfree_internal(void **ptr, u_int flags, char *file, const char *func, int line) {
