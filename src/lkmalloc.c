@@ -13,6 +13,8 @@
 static int initialized = 0;
 static int page_size;
 
+#define LK_REPORT_HEADER "record_type,filename,fxname,line_num,timestamp,ptr_passed,retval,size_or_flags,alloc_addr_returned\n"
+
 static void lk_lib_fini() {
 	lk_data_fini();
 }
@@ -266,18 +268,6 @@ int __lkfree_internal(void **ptr, u_int flags, char *file, const char *func, int
 	return retval;
 }
 
-static int write_buf(int fd, void *buf, size_t size) {
-	ssize_t result = 0;
-	ssize_t total_written = 0;
-	while (total_written < size) {
-		result = write(fd, buf, size);
-		if (result < 0) break;
-		total_written += result;
-		buf += result;
-	}
-	return result < 0 ? -1 : 0;
-}
-
 static int should_malloc_record_print(LK_RECORD *malloc_record, u_int flags) {
 	int times_freed = lk_malloc_record_get_times_freed(malloc_record);
 	if ((flags & LKR_SERIOUS) && times_freed == 0) return 1;
@@ -315,8 +305,7 @@ static int print_record(int fd, u_int flags, void *data) {
 }
 
 static int print_header(int fd) {
-	char *header = "record_type,filename,fxname,line_num,timestamp,ptr_passed,retval,size_or_flags,alloc_addr_returned\n";
-	return write_buf(fd, header, strlen(header));
+	return dprintf(fd, LK_REPORT_HEADER);
 }
 
 int __lkreport_internal(int fd, u_int flags) {
