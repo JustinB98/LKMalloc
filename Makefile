@@ -11,7 +11,7 @@ ECTSTD := $(TSTD)/extra_credit_tests
 VALTSTD := $(TSTD)/valgrind_tests
 INCF := -I $(INCD)
 CFLAGS := -O2 -g -Wall -Werror
-DEPFLAGS := -MD
+DEPFLAGS := -M
 LDFLAGS := 
 ECFLAGS := -DEXTRA_CREDIT
 EXEC := demo
@@ -21,7 +21,8 @@ ALL_OBJF := $(patsubst $(SRCD)/%.c, $(BLDD)/%.o, $(ALL_SRCF))
 ALL_REG_TESTS := $(wildcard $(REGTSTD)/test*.sh)
 ALL_EC_TESTS := $(wildcard $(ECTSTD)/test*.sh)
 ALL_VAL_TESTS := $(wildcard $(VALTSTD)/test*.sh)
-ALL_DEPS := $(wildcard $(BLDD)/*.d)
+ALL_EXISTING_DEPS := $(wildcard $(BLDD)/*.d)
+ALL_DEPS := $(patsubst $(SRCD)/%.c, $(BLDD)/%.d, $(ALL_SRCF))
 
 .PHONY: all clean depend tests run_reg_tests run_ec_tests ec
 
@@ -33,8 +34,7 @@ clean:
 ec: CFLAGS += $(ECFLAGS)
 ec: all
 
-depend: CFLAGS += $(DEPFLAGS)
-depend: all
+depend: $(BLDD) $(ALL_DEPS)
 
 run_test_directory = \
 		total_tests=0 ; \
@@ -75,10 +75,13 @@ tests: clean all run_reg_tests
 $(BLDD):
 	mkdir -p $@
 
-include $(ALL_DEPS)
+include $(ALL_EXISTING_DEPS)
 
 $(BLDD)/%.o: $(SRCD)/%.c
 	$(CC) $(INCF) $(CFLAGS) -c -o $@ $<
+
+$(BLDD)/%.d: $(SRCD)/%.c
+	$(CC) $(INCF) $(DEPFLAGS) -MT $(BLDD)/$*.o -o $@ $<
 
 $(EXECF): $(ALL_OBJF)
 	$(CC) -o $@ $^ $(LDFLAGS)
