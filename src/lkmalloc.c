@@ -34,9 +34,9 @@ static void init_if_needed() {
 	}
 }
 
-static void fill_around_malloced_ptr(char *ptr, u_int size, u_int flags) {
-	if (flags & LKM_UNDER) *ptr = 0x6b;
-	if (flags & LKM_OVER) ptr[size] = 0x5a;
+static void fill_around_malloced_ptr(char *ptr, u_int actual_size, u_int flags) {
+	if (flags & LKM_UNDER) memset(ptr, 0x6b, 8);
+	if (flags & LKM_OVER) memset(ptr + actual_size - 8, 0x5a, 8);
 }
 
 static void *get_user_ptr(void *malloced_ptr, u_int flags) {
@@ -113,11 +113,6 @@ static void *get_mapped_user_ptr(void *mapped_ptr, size_t ptr_size, u_int size, 
 static int insert_mapped_ptr(LK_RECORD *malloc_record, void **ptr, u_int size, u_int flags) {
 	u_int actual_size = get_actual_size(size, flags);
 	void *mapped_ptr;
-	// malloc_record->sub_record.malloc_record.addr_returned = NULL;
-	if ((flags & LKM_PROT_BEFORE) && (flags & LKM_PROT_AFTER)) {
-		insert_into_failed(malloc_record, -EINVAL);
-		return -EINVAL;
-	}
 	mapped_ptr = get_mapped_ptr(malloc_record, actual_size, flags);
 	if (mapped_ptr == MAP_FAILED) {
 		insert_into_failed(malloc_record, -errno);
@@ -125,7 +120,7 @@ static int insert_mapped_ptr(LK_RECORD *malloc_record, void **ptr, u_int size, u
 	} else {
 		size_t ptr_size = get_mapped_size(actual_size);
 		void *user_ptr = get_mapped_user_ptr(mapped_ptr, ptr_size, actual_size, flags);
-		fill_around_malloced_ptr(user_ptr, size, flags);
+		fill_around_malloced_ptr(user_ptr, actual_size, flags);
 		user_ptr = get_user_ptr(user_ptr, flags);
 		lk_malloc_record_set_addr_returned(malloc_record, user_ptr);
 		*ptr = user_ptr;
@@ -140,8 +135,8 @@ static void *get_ptr(u_int size, u_int flags) {
 	u_int new_size = get_actual_size(size, flags);
 	void *malloced_ptr = malloc(new_size);
 	if (malloced_ptr == NULL) return NULL;
-	if (flags & LKM_INIT) memset(malloced_ptr, 0, size);
-	fill_around_malloced_ptr(malloced_ptr, size, flags);
+	if (flags & LKM_INIT) memset(malloced_ptr, 0, new_size);
+	fill_around_malloced_ptr(malloced_ptr, new_size, flags);
 	return malloced_ptr;
 }
 
@@ -173,12 +168,20 @@ static int insert_ptr(LK_RECORD *malloc_record, void **ptr, u_int size, u_int fl
 	return 0;
 }
 
+int malloc_request_has_invalid_args(u_int flags, void **ptr) {
+	if (ptr == NULL) return 1;
+#ifdef EXTRA_CREDIT
+	if ((flags & LKM_PROT_BEFORE) && (flags & LKM_PROT_AFTER)) return 1;
+#endif
+	return 0;
+}
+
 int __lkmalloc_internal(u_int size, void **ptr, u_int flags, char *file, const char *func, int line) {
 	init_if_needed();
 	LK_METADATA metadata;
 	fill_metadata(&metadata, line, file, func);
 	LK_RECORD *malloc_record = lk_create_malloc_record(flags, ptr, &metadata, size);
-	if (ptr == NULL) {
+	if (malloc_request_has_invalid_args(flags, ptr)) {
 		insert_into_failed(malloc_record, -EINVAL);
 		return -EINVAL;
 	}
