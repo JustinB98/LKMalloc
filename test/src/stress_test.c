@@ -33,6 +33,5 @@ int main(int argc, char *argv[]) {
 	ret = lkfree(&buf, LKF_REG);
 	if (ret < 0) return EXIT_FAILURE;
 	ret = lkreport(STDERR_FILENO, LKR_MATCH);
-	printf("Ret: %d\n", ret);
 	return ret == (size * 2) + 2 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
