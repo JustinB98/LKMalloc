@@ -47,6 +47,6 @@ test_name="LKM_UNDER and LKM_OVER check OVER test"
 $assert_block 10 0x6 18 0x6a 8 2&1> /dev/null
 $assert_success
 
-printf "==================== TEST01.SH end ====================\n"
+printf "==================== TEST01.SH END ====================\n"
 test_type="test01.sh"
 . shell_tests/finish.sh
