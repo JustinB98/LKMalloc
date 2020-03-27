@@ -6,7 +6,8 @@
 
 static void assert_bytes(char *buf, int byte, u_int len) {
 	for (u_int i = 0; i < len; ++i) {
-		if (buf[i] != byte) exit(EXIT_FAILURE);
+		int c = buf[i];
+		if (c != byte) exit(EXIT_FAILURE);
 	}
 }
 
