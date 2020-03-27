@@ -9,16 +9,18 @@ LKMAL := lkmalloc
 LKMALH := $(LKMAL).h
 LKMALA := $(LKMAL).a
 LKMALAF := $(LIBD)/$(LKMALA)
-LDFLAGS := -l $(LIBD)
-CFLAGS := -g -Wall -Werror -I $(include)
+CFLAGS := -g -Wall -Werror -I $(INCD)
 ALL_SRCF := $(wildcard $(SRCD)/*.c)
 ALL_EXEF := $(patsubst $(SRCD)/%.c, $(BIND)/%, $(ALL_SRCF))
 ALL_TESTS := $(wildcard test*.sh)
 
-all: $(BLDD) $(ALL_EXEF)
+all: $(BIND) $(ALL_EXEF)
 
 clean:
-	$(RM) -rf $(BIN)
+	$(RM) -rf $(BIND)
+
+$(BIND):
+	mkdir -p $@
 
 run_test_directory = \
 		total_tests=0 ; \
@@ -45,4 +47,4 @@ run_tests:
 	@printf "===================== END TESTS ====================\n\n"
 
 $(BIND)/%: $(SRCD)/%.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LKMALAF)
