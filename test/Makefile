@@ -44,7 +44,7 @@ run_test_directory = \
 run_tests:
 	@printf "===================== STARTING TESTS ====================\n\n"
 	@$(call run_test_directory,$(ALL_TESTS))
-	@printf "===================== END TESTS ====================\n\n"
+	@printf "\n\n===================== END TESTS ====================\n"
 
 $(BIND)/%: $(SRCD)/%.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LKMALAF)
