@@ -18,9 +18,8 @@ INCF := -I $(INCD)
 CFLAGS := -g -Wall -Werror
 DEPFLAGS := -M
 ARCFLAGS := rcs
-LIBLOCATION := $(LIBD)
 ARCNAME = $(MODULENAME).a
-ARCF := $(LIBLOCATION)/$(ARCNAME)
+ARCF := $(LIBD)/$(ARCNAME)
 ECFLAGS := -DEXTRA_CREDIT
 ALL_SRCF := $(wildcard $(SRCD)/*.c)
 ALL_OBJF := $(patsubst $(SRCD)/%.c, $(BLDD)/%.o, $(ALL_SRCF))
@@ -29,10 +28,12 @@ ALL_DEPS := $(patsubst $(SRCD)/%.c, $(BLDD)/%.d, $(ALL_SRCF))
 
 .PHONY: all clean depend tests run_reg_tests run_ec_tests ec create_lib install_into_test
 
+all: create_lib
+
 create_lib: $(BLDD) $(LIBD) $(LIBHDRF) $(ARCF)
 
-$(LIBHDRF):
-	$(CP) $(HEADERF) $(LIBD)/$(LKMALHDR)
+$(LIBHDRF): $(HEADERF)
+	$(CP) $< $@
 
 clean:
 	$(RM) -rf $(BLDD) $(LIBD)
@@ -46,8 +47,10 @@ install_into_test: create_lib
 	$(CP) $(LIBHDRF) $(TSTD)/$(INCD)/$(LKMALHDR)
 	$(CP) $(ARCF) $(TSTD)/$(LIBD)/$(ARCNAME)
 
-tests: install_into_test
-	$(MAKE) -C $(TSTD) run_tests
+tests: clean install_into_test
+	$(MAKE) -C $(TSTD) clean all run_reg_tests
+	$(MAKE) clean ec install_into_test
+	$(MAKE) -C $(TSTD) clean all run_ec_tests
 
 $(BLDD) $(LIBD) $(TSTD)/$(LIBD):
 	mkdir -p $@

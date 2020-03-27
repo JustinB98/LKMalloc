@@ -5,6 +5,9 @@ SRCD := src
 INCD := include
 BIND := bin
 LIBD := lib
+SHLTSTD := shell_tests
+REGTSTD := $(SHLTSTD)/reg_tests
+ECTSTD := $(SHLTSTD)/ec_tests
 LKMAL := lkmalloc
 LKMALH := $(LKMAL).h
 LKMALA := $(LKMAL).a
@@ -12,7 +15,8 @@ LKMALAF := $(LIBD)/$(LKMALA)
 CFLAGS := -g -Wall -Werror -I $(INCD)
 ALL_SRCF := $(wildcard $(SRCD)/*.c)
 ALL_EXEF := $(patsubst $(SRCD)/%.c, $(BIND)/%, $(ALL_SRCF))
-ALL_TESTS := $(wildcard test*.sh)
+ALL_REG_TESTS := $(wildcard $(REGTSTD)/test*.sh)
+ALL_EC_TESTS := $(wildcard $(ECTSTD)/test*.sh)
 
 all: $(BIND) $(ALL_EXEF)
 
@@ -41,10 +45,15 @@ run_test_directory = \
 		printf "\n$$total_passed / $$total_tests test files passed" ; \
 		printf "\033[0m" ;
 
-run_tests:
-	@printf "===================== STARTING TESTS ====================\n\n"
-	@$(call run_test_directory,$(ALL_TESTS))
-	@printf "\n\n===================== END TESTS ====================\n"
+run_reg_tests: all
+	@printf "===================== STARTING REG TESTS ====================\n\n"
+	@$(call run_test_directory,$(ALL_REG_TESTS))
+	@printf "\n\n===================== END REG TESTS ====================\n"
+
+run_ec_tests: all
+	@printf "===================== STARTING EC TESTS ====================\n\n"
+	@$(call run_test_directory,$(ALL_EC_TESTS))
+	@printf "\n\n===================== END EC TESTS ====================\n"
 
 $(BIND)/%: $(SRCD)/%.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LKMALAF)

@@ -3,8 +3,8 @@
 total_pass=0
 total_fail=0
 
-assert_success=". ./assert_successful_exit.sh"
-assert_fail=". ./assert_unsuccesful_exit.sh"
+assert_success=". shell_tests/assert_successful_exit.sh"
+assert_fail=". shell_tests./assert_unsuccesful_exit.sh"
 
 stress_test="bin/stress_test"
 assert_block="bin/assert_memory_block"
@@ -49,4 +49,4 @@ $assert_success
 
 printf "==================== TEST01.SH end ====================\n"
 test_type="test01.sh"
-. ./finish.sh
+. shell_tests/finish.sh
