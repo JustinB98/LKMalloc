@@ -22,7 +22,8 @@ DEPFLAGS := -M
 LDFLAGS := 
 ARCFLAGS := rcs
 LIBLOCATION := $(LIBD)
-ARCF := $(LIBLOCATION)/$(MODULENAME).a
+ARCNAME = $(MODULENAME).a
+ARCF := $(LIBLOCATION)/$(ARCNAME)
 ECFLAGS := -DEXTRA_CREDIT
 ALL_SRCF := $(wildcard $(SRCD)/*.c)
 ALL_OBJF := $(patsubst $(SRCD)/%.c, $(BLDD)/%.o, $(ALL_SRCF))
@@ -45,7 +46,8 @@ ec: all
 depend: $(BLDD) $(ALL_DEPS)
 
 install_into_test: create_lib
-	$(CP) $(LIBD) $(TSTD)
+	$(CP) $(LIBHDRF) $(TSTD)/$(INCD)/$(LKMALHDR)
+	$(CP) $(ARCF) $(TSTD)/$(LIBD)/$(ARCNAME)
 
 tests: clean all run_reg_tests
 
