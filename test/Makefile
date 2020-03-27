@@ -42,6 +42,7 @@ run_test_directory = \
 		else \
 			printf "\033[0;31m" ; \
 		fi ; \
+		printf "\nSynopsis: " ; \
 		printf "\n$$total_passed / $$total_tests test files passed" ; \
 		printf "\033[0m" ;
 
