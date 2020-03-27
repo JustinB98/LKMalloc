@@ -1,78 +1,55 @@
 CC := gcc
 RM := rm
 SH := sh
+AR := ar
+CP := cp
 SRCD := src
+LIBD := lib
 INCD := include
 BIND := .
 BLDD := build
-TSTD := shell_tests
+TSTD := test
+MODULENAME := lkmalloc
+LKMALHDR := $(MODULENAME).h
+HEADERF := $(INCD)/$(LKMALHDR)
+LIBHDRF := $(LIBD)/$(LKMALHDR)
 REGTSTD := $(TSTD)/reg_tests
 ECTSTD := $(TSTD)/extra_credit_tests
 VALTSTD := $(TSTD)/valgrind_tests
 INCF := -I $(INCD)
-CFLAGS := -O2 -g -Wall -Werror
+CFLAGS := -g -Wall -Werror
 DEPFLAGS := -M
 LDFLAGS := 
+ARCFLAGS := rcs
+LIBLOCATION := $(LIBD)
+ARCF := $(LIBLOCATION)/$(MODULENAME).a
 ECFLAGS := -DEXTRA_CREDIT
-EXEC := demo
-EXECF := $(BIND)/$(EXEC)
 ALL_SRCF := $(wildcard $(SRCD)/*.c)
 ALL_OBJF := $(patsubst $(SRCD)/%.c, $(BLDD)/%.o, $(ALL_SRCF))
-ALL_REG_TESTS := $(wildcard $(REGTSTD)/test*.sh)
-ALL_EC_TESTS := $(wildcard $(ECTSTD)/test*.sh)
-ALL_VAL_TESTS := $(wildcard $(VALTSTD)/test*.sh)
 ALL_EXISTING_DEPS := $(wildcard $(BLDD)/*.d)
 ALL_DEPS := $(patsubst $(SRCD)/%.c, $(BLDD)/%.d, $(ALL_SRCF))
 
-.PHONY: all clean depend tests run_reg_tests run_ec_tests ec
+.PHONY: all clean depend tests run_reg_tests run_ec_tests ec create_lib install_into_test
 
-all: $(BLDD) $(EXECF)
+create_lib: $(BLDD) $(LIBD) $(LIBHDRF) $(ARCF)
+
+$(LIBHDRF):
+	$(CP) $(HEADERF) $(LIBD)/$(LKMALHDR)
 
 clean:
-	$(RM) -rf $(BLDD) $(EXECF)
+	$(RM) -rf $(BLDD) $(LIBD)
 
 ec: CFLAGS += $(ECFLAGS)
 ec: all
 
 depend: $(BLDD) $(ALL_DEPS)
 
-run_test_directory = \
-		total_tests=0 ; \
-		total_passed=0 ; \
-		for test_file in $(1) ; do \
-			total_tests=$$((total_tests+1)) ; \
-			$(SH) $$test_file ; \
-			exit=$$? ; \
-			if [ $$exit -eq 0 ]; then \
-				total_passed=$$((total_passed+1)) ; \
-			fi \
-		done ; \
-		if [ $$total_tests -eq $$total_passed ]; then \
-			printf "\033[0;32m" ; \
-		else \
-			printf "\033[0;31m" ; \
-		fi ; \
-		printf "\n$$total_passed / $$total_tests test files passed" ; \
-		printf "\033[0m" ;
-
-run_val_tests:
-	@printf "================= STARTING VALGRIND TESTS =================\n\n"
-	@$(call run_test_directory,$(ALL_VAL_TESTS))
-	@printf "\n\n================= FINISHED VALGRIND TESTS =================\n" ;
-
-run_ec_tests:
-	@printf "================= STARTING EXTRA CREDIT TESTS =================\n\n"
-	@$(call run_test_directory,$(ALL_EC_TESTS))
-	@printf "\n\n================= FINISHED EXTRA CREDIT TESTS =================\n" ;
-
-run_reg_tests:
-	@printf "================= STARTING REGULAR TESTS =================\n\n"
-	@$(call run_test_directory,$(ALL_REG_TESTS))
-	@printf "\n\n================= FINISHED REGULAR TESTS =================\n"
+install_into_test: create_lib
+	$(CP) $(LIBD) $(TSTD)
 
 tests: clean all run_reg_tests
 
-$(BLDD):
+$(BLDD) $(LIBD):
 	mkdir -p $@
 
 include $(ALL_EXISTING_DEPS)
@@ -83,5 +60,5 @@ $(BLDD)/%.o: $(SRCD)/%.c
 $(BLDD)/%.d: $(SRCD)/%.c
 	$(CC) $(INCF) $(DEPFLAGS) -MT $(BLDD)/$*.o -o $@ $<
 
-$(EXECF): $(ALL_OBJF)
-	$(CC) -o $@ $^ $(LDFLAGS)
+$(ARCF): $(ALL_OBJF)
+	$(AR) $(ARCFLAGS) $@ $^
