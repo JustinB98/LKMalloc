@@ -1,14 +1,14 @@
 #ifndef LK_LIB_H
 #define LK_LIB_H
 
+#include <stdlib.h>
+
 #define LKM_REG 0x0
 #define LKM_INIT 0x1
 #define LKM_OVER 0x2
 #define LKM_UNDER 0x4
-#ifdef EXTRA_CREDIT
 #define LKM_PROT_AFTER 0x8
 #define LKM_PROT_BEFORE 0x10
-#endif
 
 #define LKF_REG 0x0
 #define LKF_APPROX 0x1
@@ -27,8 +27,6 @@
 #define lkmalloc(size, ptr, flags) __lkmalloc_internal((size), (ptr), (flags), __FILE__, __func__, __LINE__)
 #define lkfree(ptr, flags) __lkfree_internal((ptr), (flags), __FILE__, __func__, __LINE__)
 #define lkreport(fd, flags) __lkreport_internal((fd), (flags))
-
-#include <stdlib.h>
 
 int __lkmalloc_internal(u_int size, void **ptr, u_int flags, char *file, const char *func, int line);
 
