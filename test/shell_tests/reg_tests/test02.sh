@@ -24,5 +24,5 @@ $double_free 1000 > /dev/null 2>&1
 $assert_success
 
 printf "==================== TEST02.SH END ====================\n"
-test_type="test01.sh"
+test_type="test02.sh"
 . shell_tests/finish.sh
