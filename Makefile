@@ -3,6 +3,7 @@ RM := rm
 SH := sh
 AR := ar
 CP := cp
+MAKE := make
 SRCD := src
 LIBD := lib
 INCD := include
@@ -13,13 +14,9 @@ MODULENAME := lkmalloc
 LKMALHDR := $(MODULENAME).h
 HEADERF := $(INCD)/$(LKMALHDR)
 LIBHDRF := $(LIBD)/$(LKMALHDR)
-REGTSTD := $(TSTD)/reg_tests
-ECTSTD := $(TSTD)/extra_credit_tests
-VALTSTD := $(TSTD)/valgrind_tests
 INCF := -I $(INCD)
 CFLAGS := -g -Wall -Werror
 DEPFLAGS := -M
-LDFLAGS := 
 ARCFLAGS := rcs
 LIBLOCATION := $(LIBD)
 ARCNAME = $(MODULENAME).a
@@ -49,9 +46,10 @@ install_into_test: create_lib
 	$(CP) $(LIBHDRF) $(TSTD)/$(INCD)/$(LKMALHDR)
 	$(CP) $(ARCF) $(TSTD)/$(LIBD)/$(ARCNAME)
 
-tests: clean all run_reg_tests
+tests: install_into_test
+	$(MAKE) -C $(TSTD) run_tests
 
-$(BLDD) $(LIBD):
+$(BLDD) $(LIBD) $(TSTD)/$(LIBD):
 	mkdir -p $@
 
 include $(ALL_EXISTING_DEPS)
