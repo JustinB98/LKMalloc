@@ -177,3 +177,4 @@ Justin Behrman
 ## Other Notes
 
 	* Regarding the extra credit section, mmap would only be called once as opposed to calling twice (or three times) to grab both the user block and the protected block. This is because (I don't believe) mmap is guaranteed to return a block at the specified address. When I tried this originally, I could not get it to work (maybe I was doing something wrong). What happens in the program as of now is using mmap to get the entire block needed, then using mprotect, set the region to PROT_NONE.
+	* LKReport will report at the end of the program execution with the default flags LKR_SERIOUS, LKR_BAD_FREE, LKR_ORPHAN_FREE and LKR_DOUBLE_FREE. Basically all the flags that show something is wrong. They are printed to stderr.
