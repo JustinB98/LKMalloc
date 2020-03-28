@@ -14,6 +14,7 @@ MODULENAME := lkmalloc
 LKMALHDR := $(MODULENAME).h
 HEADERF := $(INCD)/$(LKMALHDR)
 LIBHDRF := $(LIBD)/$(LKMALHDR)
+TSTLIBD := $(TSTD)/$(LIBD)
 INCF := -I $(INCD)
 CFLAGS := -g -Wall -Werror
 DEPFLAGS := -M
@@ -30,7 +31,7 @@ ALL_DEPS := $(patsubst $(SRCD)/%.c, $(BLDD)/%.d, $(ALL_SRCF))
 
 all: create_lib
 
-create_lib: $(BLDD) $(LIBD) $(LIBHDRF) $(ARCF)
+create_lib: $(BLDD) $(LIBD) $(TSTLIBD) $(LIBHDRF) $(ARCF)
 
 $(LIBHDRF): $(HEADERF)
 	$(CP) $< $@
@@ -52,7 +53,7 @@ tests: clean install_into_test
 	$(MAKE) clean ec install_into_test
 	$(MAKE) -C $(TSTD) clean all run_ec_tests
 
-$(BLDD) $(LIBD) $(TSTD)/$(LIBD):
+$(BLDD) $(LIBD) $(TSTLIBD):
 	mkdir -p $@
 
 -include $(ALL_EXISTING_DEPS)
