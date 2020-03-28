@@ -48,13 +48,26 @@ test_name="Freeing With LKF_APPROX under redzone over printed warning"
 grep "WARNING" test_file > /dev/null 2>&1
 $assert_success
 
-test_name="lkmalloc exits with LKF_APPROX and LKF_ERROR"
+test_name="lkmalloc fails with LKF_APPROX, LKF_WARN and LKF_ERROR"
 $shift_and_free 10 0 0xb 5 2> test_file > /dev/null
 $assert_fail
 
 test_name="lkmalloc printed a message with LKF_APPROX and LKF_ERROR with bad free"
 grep "Terminating" test_file > /dev/null 2>&1
 $assert_success
+
+test_name="Freeing orphaned with LKF_UNKNOWN"
+$shift_and_free 10 0 0x4 20 2> test_file > /dev/null
+# Fails because there's not a match
+$assert_fail
+
+test_name="Freeing orphaned pointer with LKF_UNKNOWN printed warning"
+grep "WARNING" test_file > /dev/null 2>&1
+$assert_success
+
+test_name="lkmalloc fails with LKF_UNKNOWN and LKR_ERROR"
+$shift_and_free 10 0 0xc 20 > /dev/null 2>&1
+$assert_fail
 
 printf "==================== TEST02.SH END ====================\n"
 test_type="test02.sh"
