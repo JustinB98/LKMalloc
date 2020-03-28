@@ -55,7 +55,7 @@ tests: clean install_into_test
 $(BLDD) $(LIBD) $(TSTD)/$(LIBD):
 	mkdir -p $@
 
-include $(ALL_EXISTING_DEPS)
+-include $(ALL_EXISTING_DEPS)
 
 $(BLDD)/%.o: $(SRCD)/%.c
 	$(CC) $(INCF) $(CFLAGS) -c -o $@ $<
