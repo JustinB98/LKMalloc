@@ -127,7 +127,6 @@ static int insert_mapped_ptr(LK_RECORD *malloc_record, void **ptr, u_int size, u
 	} else {
 		size_t ptr_size = get_mapped_size(actual_size);
 		void *user_ptr = get_mapped_user_ptr(mapped_ptr, ptr_size, actual_size, flags);
-		printf("mapped ptr: %p\nuser_ptr%p\n", mapped_ptr, user_ptr);
 		fill_around_malloced_ptr(user_ptr, actual_size, flags);
 		user_ptr = get_user_ptr(user_ptr, flags);
 		lk_malloc_record_set_addr_returned(malloc_record, user_ptr);
@@ -205,25 +204,27 @@ int __lkmalloc_internal(u_int size, void **ptr, u_int flags, char *file, const c
 
 static void terminate_program_if_error(u_int flags) {
 	if (flags & LKF_ERROR) {
+		fprintf(stderr, "LKF_ERROR - Terminating Program\n");
 		exit(EXIT_FAILURE);
 	}
 }
 
-static void data_not_found(u_int flags, char *file, const char *func, int line) {
+static void data_not_found(void *ptr, u_int flags, char *file, const char *func, int line) {
 	if (flags & LKF_UNKNOWN) {
-		fprintf(stderr, "Trying to allocate a pointer that was never lkmalloced\n");
+		fprintf(stderr, "Trying to free unknown %p in %s:%s:%d\n", ptr, file, func, line);
+		terminate_program_if_error(flags);
 	}
-	terminate_program_if_error(flags);
 }
 
-static int attempt_to_free(LK_RECORD *free_record, u_int flags, LK_RECORD *malloc_record) {
+static int attempt_to_free(LK_RECORD *free_record, u_int flags, LK_RECORD *malloc_record, char *file, const char *func, int line) {
 	/* If pointers are different, then LKF_APPROX was part of flags */
 	void *ptr_requested = lk_free_record_get_ptr_requested(free_record);
 	void *ptr_user_got = lk_free_record_get_user_ptr_returned(free_record);
 	int was_freed_approx = ptr_requested != ptr_user_got;
 	lk_malloc_record_set_freed_approx(malloc_record, was_freed_approx);
 	if (was_freed_approx && (flags & LKF_WARN)) {
-		fprintf(stderr, "WARNING - Freeing a pointer using LKF_APPROX\n");
+		fprintf(stderr, "WARNING - Freeing %p using LKF_APPROX. Pointer that was passed: %p %s:%s:%d\n",
+				ptr_user_got, ptr_requested, file, func, line);
 		terminate_program_if_error(flags);
 	}
 #ifdef EXTRA_CREDIT
@@ -277,12 +278,12 @@ int __lkfree_internal(void **ptr, u_int flags, char *file, const char *func, int
 	lk_free_record_set_ptr_requested(free_record, *ptr);
 	LK_RECORD *data_found = lk_data_insert_free_record(*ptr, free_record, finder);
 	if (data_found == NULL) {
-		data_not_found(flags, file, func, line);
+		data_not_found(*ptr, flags, file, func, line);
 		/* Do not need to insert into failed list because lk_data_insert_free_record does this */
 		lk_record_set_retval(free_record, -ENOENT);
 		return -ENOENT;
 	}
-	int retval = attempt_to_free(free_record, flags, data_found);
+	int retval = attempt_to_free(free_record, flags, data_found, file, func, line);
 	lk_record_set_retval(free_record, retval);
 	return retval;
 }
