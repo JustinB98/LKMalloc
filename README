@@ -1,1 +1,48 @@
-Empty README for HW2
+.
+├── Makefile
+├── README
+├── include/
+│   ├── binary_tree.h
+│   ├── linked_list.h
+│   ├── lk_data.h
+│   ├── lk_record.h
+│   └── lkmalloc.h
+├── src/
+│   ├── binary_tree.c
+│   ├── demo.c
+│   ├── linked_list.c
+│   ├── lk_data.c
+│   ├── lk_record.c
+│   └── lkmalloc.c
+└── test/
+    ├── Makefile
+    ├── include/
+    │   ├── lkmalloc.h
+    │   └── test_utils.h
+    ├── lib/
+    │   └── lkmalloc.a
+    ├── shell_tests/
+    │   ├── assert_exit_code.sh
+    │   ├── assert_successful_exit.sh
+    │   ├── assert_unsuccessful_exit.sh
+    │   ├── ec_tests/
+    │   │   ├── test05.sh
+    │   │   └── test06.sh
+    │   ├── finish.sh
+    │   └── reg_tests/
+    │       ├── test01.sh
+    │       ├── test02.sh
+    │       ├── test03.sh
+    │       └── test04.sh
+    └── src/
+        ├── alloc_with_flags_and_modify.c
+        ├── assert_approx_free.c
+        ├── assert_memory_block.c
+        ├── assert_orphan_free.c
+        ├── assert_valid_lkfree_flags.c
+        ├── assert_valid_lkmalloc_flags.c
+        ├── assert_valid_lkreport_flags.c
+        ├── double_free_test.c
+        ├── shift_and_free.c
+        └── stress_test.c
+
