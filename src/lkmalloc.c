@@ -280,7 +280,7 @@ static int finder(void *fr, void *data) {
 }
 
 static int free_request_has_invalid_args(void **ptr, u_int flags) {
-	if (ptr == NULL || *ptr == NULL) return 1;
+	if (ptr == NULL) return 1;
 	else if ((flags & LKF_WARN) && (flags && LKF_APPROX) == 0) return 1;
 	/* If LKF_ERROR is present but not LKF_UNKNOWN or LKF_WARN, then it's invalid */
 	else if ((flags & LKF_ERROR) && (flags && (LKF_UNKNOWN | LKF_WARN)) == 0) return 1;
@@ -330,9 +330,10 @@ static int should_free_record_print(LK_RECORD *free_record, u_int flags) {
 	void *ptr_requested = lk_free_record_get_ptr_requested(free_record);
 	int was_freed_approx = ptr_requested != ptr_user_got;
 	int time_freed = lk_free_record_get_times_freed(free_record);
+	int was_orphaned = lk_free_record_is_orphaned_free(free_record);
 	if ((flags & LKR_MATCH) && ptr_user_got != NULL) return 1;
 	else if ((flags & (LKR_BAD_FREE | LKR_APPROX)) && was_freed_approx) return 1;
-	else if ((flags & LKR_ORPHAN_FREE) && ptr_user_got == NULL) return 1;
+	else if ((flags & LKR_ORPHAN_FREE) && was_orphaned) return 1;
 	else if ((flags & LKR_DOUBLE_FREE) && time_freed > 1) return 1;
 	else return 0;
 }
