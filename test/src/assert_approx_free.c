@@ -5,7 +5,7 @@
 #include "lkmalloc.h"
 #include "test_utils.h"
 
-/* assert_approx_frees frees */
+/* bin/assert_approx_frees frees */
 int main(int argc, char *argv[]) {
 	if (argc != 2) return EXIT_FAILURE;
 	u_int records;

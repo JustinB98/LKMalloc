@@ -12,7 +12,7 @@ static void assert_bytes(char *buf, int byte, u_int len) {
 	}
 }
 
-/* size, malloc_flags, offset, byte, len */
+/* bin/assert_memory_block size, malloc_flags, offset, byte, len */
 int main(int argc, char *argv[]) {
 	if (argc != 6) return EXIT_FAILURE;
 	u_int size, malloc_flags, len;

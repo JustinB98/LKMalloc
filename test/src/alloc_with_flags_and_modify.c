@@ -5,7 +5,7 @@
 #include "lkmalloc.h"
 #include "test_utils.h"
 
-/* size, malloc flags, free flags, buffer offset */
+/* bin/alloc_with_flags_and_modify size, malloc flags, free flags, buffer offset */
 int main(int argc, char *argv[]) {
 	if (argc != 5) return EXIT_FAILURE;
 	u_int size, malloc_flags, free_flags;
