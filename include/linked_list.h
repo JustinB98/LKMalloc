@@ -12,21 +12,21 @@ typedef struct linked_list {
 	LINKED_NODE *end;
 } LINKED_LIST;
 
-/*
+/**
  * Initializes linked list for use
  * @return	Linked list malloced
  *			NULL if malloc failed
  */
 LINKED_LIST *linked_list_init();
 
-/*
+/**
  * Inserts data into linked list
  * @param list	list to insert data into
  * @param data	data to be inserted into list
  */
 void linked_list_insert(LINKED_LIST *list, void *data);
 
-/*
+/**
  * Iterates through linked list in order and passing current data into
  * consumer function
  * @param list		List to iterate over
@@ -34,7 +34,7 @@ void linked_list_insert(LINKED_LIST *list, void *data);
  */
 void linked_list_iterate(LINKED_LIST *list, void (*consumer)(void *));
 
-/*
+/**
  * Iterates through linked list in reverse order and passing current data into
  * consumer function
  * @param list		List to iterate over
@@ -42,7 +42,7 @@ void linked_list_iterate(LINKED_LIST *list, void (*consumer)(void *));
  */
 void linked_list_reverse_iterate(LINKED_LIST *list, void (*consumer)(void *));
 
-/*
+/**
  * Uses function to find data in list
  * @param list		List to search in
  * @param finder	Function that takes current data
@@ -51,7 +51,7 @@ void linked_list_reverse_iterate(LINKED_LIST *list, void (*consumer)(void *));
  */
 void *linked_list_find(LINKED_LIST *list, int (*finder)(void *));
 
-/*
+/**
  * Specialized function for lk libary. Iterates through list and passes back arguments into consumer function
  * Keeps track of how many times consumer returned a positive number
  * @param list		list to iterate over
@@ -66,7 +66,7 @@ void *linked_list_find(LINKED_LIST *list, int (*finder)(void *));
  */
 int linked_list_iterate_with_count(LINKED_LIST *list, int fd, u_int flags, int (*consumer)(int, u_int, void *));
 
-/*
+/**
  * Frees list and all data (except the ones that were passed in)
  * @param list		List to free
  * @param onRemove	Function on how to free passed in data

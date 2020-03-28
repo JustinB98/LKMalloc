@@ -12,14 +12,14 @@ typedef struct binary_tree {
 	NODE *root;
 } BINARY_TREE;
 
-/*
+/**
  * Initializes a tree using malloc
  * @returns	tree to pass into the other functions in this module.
  *			NULL if malloc failed
  */
 BINARY_TREE *binary_tree_init();
 
-/* 
+/**
  * Inserts key and value pair into binary tree
  * @param tree	Tree to insert key and data into
  * @param key	Key to search for later
@@ -27,7 +27,7 @@ BINARY_TREE *binary_tree_init();
  */
 void binary_tree_insert(BINARY_TREE *tree, void *key, void *data);
 
-/*
+/**
  * Replaces value at key in binary there. Inserts it if it doesn't exist
  * @param tree	Tree to replace in
  * @param key	Key to search for and replace existing data with paramter "data"
@@ -35,7 +35,7 @@ void binary_tree_insert(BINARY_TREE *tree, void *key, void *data);
  */
 void binary_tree_replace(BINARY_TREE *tree, void *key, void *data);
 
-/*
+/**
  * Finds data in tree with given key
  * @param tree	Tree to search key
  * @param key	Key to search for
@@ -44,7 +44,7 @@ void binary_tree_replace(BINARY_TREE *tree, void *key, void *data);
  */
 void *binary_tree_find(BINARY_TREE *tree, void *key);
 
-/*
+/**
  * Finds data in tree with given function
  * @param tree		Tree to search
  * @param key		Key as a reference of where to go and look (left or right)
@@ -55,14 +55,14 @@ void *binary_tree_find(BINARY_TREE *tree, void *key);
  */
 void *binary_tree_find_with_function(BINARY_TREE *tree, void *key, void *ref, int (*finder)(void *, void *));
 
-/*
+/**
  * Removes key in tree
  * @param tree	Tree to search for and remove key and its data
  * @param key	Key to search for
  */
 void binary_tree_remove(BINARY_TREE *tree, void *key);
 
-/*
+/**
  * Frees all nodes in the tree and passes data into onRemove to free the inner data
  * @param tree		Tree to free
  * @param onRemove	Function to help remove the data. Ignored if NULL
