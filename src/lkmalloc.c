@@ -19,6 +19,11 @@ static void lk_lib_fini() {
 	lk_data_fini();
 }
 
+static int has_options_out_of_range(u_int largest_flag, u_int flags) {
+	u_int largest_flag_mask = largest_flag | (largest_flag - 1);
+	return (~largest_flag_mask) & flags;
+}
+
 static void insert_into_failed(LK_RECORD *record, int neg_code) {
 	lk_record_set_retval(record, neg_code);
 	lk_data_insert_failed_record(record);
@@ -177,11 +182,14 @@ static int insert_ptr(LK_RECORD *malloc_record, void **ptr, u_int size, u_int fl
 
 static int malloc_request_has_invalid_args(u_int flags, u_int size, void **ptr) {
 	if (ptr == NULL) return 1;
+	u_int largest_flag = LKM_UNDER;
 #ifdef EXTRA_CREDIT
+	largest_flag = LKM_PROT_BEFORE;
 	size = get_actual_size(size, flags);
 	int multiple_of_page_size = size & (page_size - 1);
 	if ((flags & LKM_PROT_BEFORE) && (flags & LKM_PROT_AFTER) && multiple_of_page_size) return 1;
 #endif
+	if (has_options_out_of_range(largest_flag, flags)) return 1;
 	return 0;
 }
 
@@ -275,6 +283,7 @@ static int free_request_has_invalid_args(void **ptr, u_int flags) {
 	else if ((flags & LKF_WARN) && (flags && LKF_APPROX) == 0) return 1;
 	/* If LKF_ERROR is present but not LKF_UNKNOWN or LKF_WARN, then it's invalid */
 	else if ((flags & LKF_ERROR) && (flags && (LKF_UNKNOWN | LKF_WARN)) == 0) return 1;
+	else if (has_options_out_of_range(LKF_ERROR, flags)) return 1;
 	return 0;
 }
 
@@ -347,7 +356,7 @@ static int print_header(int fd) {
 
 static int report_request_has_invalid_args(u_int flags) {
 	if ((flags & LKR_APPROX) && (flags & LKR_BAD_FREE)) return 1;
-	/* Left to add more invalid flags */
+	else if (has_options_out_of_range(LKR_APPROX, flags)) return 1;
 	return 0;
 }
 
