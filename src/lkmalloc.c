@@ -211,9 +211,17 @@ static void terminate_program_if_error(u_int flags) {
 
 static void data_not_found(void *ptr, u_int flags, char *file, const char *func, int line) {
 	if (flags & LKF_UNKNOWN) {
-		fprintf(stderr, "Trying to free unknown %p in %s:%s:%d\n", ptr, file, func, line);
+		fprintf(stderr, "WARNING - Trying to free unknown %p in %s:%s:%d\n",
+				ptr, file, func, line);
 		terminate_program_if_error(flags);
 	}
+}
+
+static int was_freed_in_redzone(LK_RECORD *malloc_record, void *ptr_requested, void *ptr_user_got) {
+	u_int size = lk_malloc_record_get_size(malloc_record);
+	if (ptr_requested < ptr_user_got) return 1;
+	else if (ptr_user_got + size < ptr_requested) return 1;
+	else return 0;
 }
 
 static int attempt_to_free(LK_RECORD *free_record, u_int flags, LK_RECORD *malloc_record, char *file, const char *func, int line) {
@@ -226,6 +234,10 @@ static int attempt_to_free(LK_RECORD *free_record, u_int flags, LK_RECORD *mallo
 		fprintf(stderr, "WARNING - Freeing %p using LKF_APPROX. Pointer that was passed: %p %s:%s:%d\n",
 				ptr_user_got, ptr_requested, file, func, line);
 		terminate_program_if_error(flags);
+	} else if ((flags & LKF_APPROX) &&
+				was_freed_in_redzone(malloc_record, ptr_requested, ptr_user_got)) {
+		fprintf(stderr, "WARNING - Freeing %p with LKF_APPROX but pointer passed (%p) was in the red zone."
+						" %s:%s:%d\n", ptr_user_got, ptr_requested, file, func, line);
 	}
 #ifdef EXTRA_CREDIT
 	u_int malloc_flags = lk_record_get_flags(malloc_record);
