@@ -16,6 +16,7 @@ static int page_size;
 #define LK_REPORT_HEADER "record_type,filename,fxname,line_num,timestamp,ptr_passed,retval,size_or_flags,alloc_addr_returned\n"
 
 static void lk_lib_fini() {
+	lkreport(STDERR_FILENO, LKR_SERIOUS | LKR_BAD_FREE | LKR_ORPHAN_FREE | LKR_DOUBLE_FREE);
 	lk_data_fini();
 }
 
