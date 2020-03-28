@@ -13,15 +13,15 @@ assert_report_flags="bin/assert_valid_lkreport_flags"
 echo "============ TEST04.SH START ==============="
 
 test_name="Assert Invalid Malloc Flags (Large Number)"
-$assert_malloc_flags 10 0xfff000 0
+$assert_malloc_flags 10 0xfff000 0 > /dev/null 2>&1
 $assert_success
 
 test_name="Assert Invalid Free Flags (Large Number)"
-$assert_free_flags 0xfff000 0
+$assert_free_flags 0xfff000 0 > /dev/null 2>&1
 $assert_success
 
 test_name="Assert Invalid Report Flags (Large Number)"
-$assert_free_flags 0xfff000 0
+$assert_free_flags 0xfff000 0 > /dev/null 2>&1
 $assert_success
 
 printf "==================== TEST04.SH END ====================\n"
