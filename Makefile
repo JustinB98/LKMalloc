@@ -48,10 +48,16 @@ install_into_test: create_lib
 	$(CP) $(LIBHDRF) $(TSTD)/$(INCD)/$(LKMALHDR)
 	$(CP) $(ARCF) $(TSTD)/$(LIBD)/$(ARCNAME)
 
+run_reg_tests: install_into_test
+	$(MAKE) -C $(TSTD) clean run_reg_tests
+
+run_ec_tests: install_into_test
+	$(MAKE) -C $(TSTD) clean run_ec_tests
+
 tests: clean install_into_test
-	$(MAKE) -C $(TSTD) clean all run_reg_tests
+	$(MAKE) -C $(TSTD) clean run_reg_tests
 	$(MAKE) clean ec install_into_test
-	$(MAKE) -C $(TSTD) clean all run_ec_tests
+	$(MAKE) -C $(TSTD) clean run_ec_tests
 
 $(BLDD) $(LIBD) $(TSTLIBD):
 	mkdir -p $@
