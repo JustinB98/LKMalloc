@@ -92,5 +92,6 @@ $alloc_with_flags_and_modify 4080 0x1f 0 4096 > /dev/null 2>&1
 $assert_exit_code
 
 printf "==================== TEST05.SH END ====================\n"
+test_type="test05.sh"
 . shell_tests/finish.sh
 
