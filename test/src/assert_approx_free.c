@@ -3,12 +3,13 @@
 #include <unistd.h>
 
 #include "lkmalloc.h"
+#include "test_utils.h"
 
 /* assert_approx_frees frees */
 int main(int argc, char *argv[]) {
 	if (argc != 2) return EXIT_FAILURE;
 	u_int records;
-	if (sscanf(argv[1], "%i", &records) < 0) return EXIT_FAILURE;
+	CONVERT_NUM(argv[1], &records);
 	for (u_int i = 0; i < records; ++i) {
 		void *buf = NULL;
 		int ret = lkmalloc(10, &buf, LKM_REG);

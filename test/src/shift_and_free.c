@@ -3,20 +3,17 @@
 #include <unistd.h>
 
 #include "lkmalloc.h"
+#include "test_utils.h"
 
-void convert_to_num(char *s, u_int *p) {
-	if (sscanf(s, "%i", p) < 0) exit(EXIT_FAILURE);
-}
-
-/* size, malloc_flags, free_flags, offset */
+/* bin/shift_and_free size, malloc_flags, free_flags, offset */
 int main(int argc, char *argv[]) {
 	if (argc != 5) return EXIT_FAILURE;
 	u_int size, malloc_flags, free_flags;
 	int offset;
-	convert_to_num(argv[1], &size);
-	convert_to_num(argv[2], &malloc_flags);
-	convert_to_num(argv[3], &free_flags);
-	if (sscanf(argv[4], "%i", &offset) < 0) return EXIT_FAILURE;
+	CONVERT_NUM(argv[1], &size);
+	CONVERT_NUM(argv[2], &malloc_flags);
+	CONVERT_NUM(argv[3], &free_flags);
+	CONVERT_NUM(argv[4], &offset);
 	void *buf = NULL;
 	int ret = lkmalloc(size, &buf, malloc_flags);
 	if (ret < 0) return EXIT_FAILURE;

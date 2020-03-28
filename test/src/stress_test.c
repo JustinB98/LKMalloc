@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "lkmalloc.h"
+#include "test_utils.h"
 
 int free_range(size_t **arr, int start, int end) {
 	for (u_int i = start; i < end; ++i) {
@@ -14,12 +15,12 @@ int free_range(size_t **arr, int start, int end) {
 	return 0;
 }
 
-/* size */
+/* bin/stress_test size */
 int main(int argc, char *argv[]) {
 	void *buf = NULL;
 	if (argc != 2) return EXIT_FAILURE;
 	u_int size;
-	if (sscanf(argv[1], "%i", &size) < 0) return EXIT_FAILURE;
+	CONVERT_NUM(argv[1], &size);
 	int ret = lkmalloc(sizeof(size_t *) * size, &buf, LKM_REG);
 	if (ret < 0) return EXIT_FAILURE;
 	size_t **arr = buf;

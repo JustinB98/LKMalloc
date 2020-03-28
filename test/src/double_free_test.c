@@ -3,12 +3,13 @@
 #include <unistd.h>
 
 #include "lkmalloc.h"
+#include "test_utils.h"
 
-/* times_to_free */
+/* bin/double_free_test times_to_free */
 int main(int argc, char *argv[]) {
 	if (argc != 2) return EXIT_FAILURE;
 	u_int times_to_free;
-	if (sscanf(argv[1], "%i", &times_to_free) < 0) return EXIT_FAILURE;
+	CONVERT_NUM(argv[1], &times_to_free);
 	void *buf = NULL;
 	int ret = lkmalloc(10, &buf, LKM_REG);
 	if (ret < 0) return EXIT_FAILURE;
