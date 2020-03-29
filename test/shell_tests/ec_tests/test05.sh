@@ -12,6 +12,26 @@ assert_memory_block="bin/assert_memory_block"
 
 printf "==================== TEST05.SH START ====================\n"
 
+test_name="LKM_PROT_AFTER SIGSEGV size = 0"
+error_code=139
+$alloc_with_flags_and_modify 0 0x8 0 1 > /dev/null 2>&1
+$assert_exit_code
+
+test_name="LKM_PROT_BEFORE SIGSEGV size = 0"
+error_code=139
+$alloc_with_flags_and_modify 0 0x10 0 0 > /dev/null 2>&1
+$assert_exit_code
+
+test_name="LKM_PROT_BEFORE and LKM_PROT_AFTER SIGSEV size = 0 access after"
+error_code=139
+$alloc_with_flags_and_modify 0 0x18 0 0 > /dev/null 2>&1
+$assert_exit_code
+
+test_name="LKM_PROT_BEFORE and LKM_PROT_AFTER SIGSEV size = 0 access before"
+error_code=139
+$alloc_with_flags_and_modify 0 0x18 0 -1 > /dev/null 2>&1
+$assert_exit_code
+
 test_name="LKM_PROT_AFTER SIGSEGV less than page size (4096)"
 error_code=139
 $alloc_with_flags_and_modify 10 0x8 0 10 > /dev/null 2>&1
@@ -83,13 +103,17 @@ $assert_success
 
 test_name="LKM_OVER, LKM_UNDER, LKM_PRO_BEFORE and LKM_PROT_AFTER SIGSEGV before"
 error_code=139
-$alloc_with_flags_and_modify 4080 0x1f 0 -9 > /dev/null 2>&1
+$alloc_with_flags_and_modify 4080 0x1e 0 -9 > /dev/null 2>&1
 $assert_exit_code
 
-test_name="LKM_OVER, LKM_UNDER, LKM_PRO_BEFORE and LKM_PROT_AFTER SIGSEGV after"
+test_name="LKM_OVER, LKM_UNDER, LKM_PROT_BEFORE and LKM_PROT_AFTER SIGSEGV after"
 error_code=139
-$alloc_with_flags_and_modify 4080 0x1f 0 4096 > /dev/null 2>&1
+$alloc_with_flags_and_modify 4080 0x1e 0 4096 > /dev/null 2>&1
 $assert_exit_code
+
+test_name="LKM_INIT, LKM_OVER, LKM_UNDER, LKM_PROT_BEFORE and LKM_PROT_AFTER assert zeroed out"
+$assert_memory_block 4080 0x1f 0 0x0 4080 > /dev/null 2>&1
+$assert_success
 
 printf "==================== TEST05.SH END ====================\n"
 test_type="test05.sh"
