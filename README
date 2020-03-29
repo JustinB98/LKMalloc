@@ -1,7 +1,8 @@
 Justin Behrman
 
 
-.
+
+./
 ├── Makefile
 ├── README
 ├── include/
@@ -10,9 +11,11 @@ Justin Behrman
 │   ├── lk_data.h
 │   ├── lk_record.h
 │   └── lkmalloc.h
+├── lib/
+│   ├── lkmalloc.a
+│   └── lkmalloc.h
 ├── src/
 │   ├── binary_tree.c
-│   ├── demo.c
 │   ├── linked_list.c
 │   ├── lk_data.c
 │   ├── lk_record.c
@@ -48,6 +51,8 @@ Justin Behrman
         ├── double_free_test.c
         ├── shift_and_free.c
         └── stress_test.c
+
+# Note: When initally git cloned, some directories listed above will not exist. Running make or make tests will generate them (directories such as lib)
 
 ## Project structure:
 
