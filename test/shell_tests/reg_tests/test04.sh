@@ -16,6 +16,14 @@ test_name="Assert Invalid Malloc Flags (Large Number)"
 $assert_malloc_flags 10 0xfff000 0 > /dev/null 2>&1
 $assert_success
 
+test_name="Assert LKM_PROT_AFTER flag doesn't Work"
+$assert_malloc_flags 10 0x8 0 > /dev/null 2>&1
+$assert_success
+
+test_name="Assert LKM_PROT_BEFORE flag doesn't work"
+$assert_malloc_flags 10 0x10 0 > /dev/null 2>&1
+$assert_success
+
 test_name="Assert Invalid Free Flags (Large Number)"
 $assert_free_flags 0xfff000 0 > /dev/null 2>&1
 $assert_success
