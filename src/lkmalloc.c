@@ -64,6 +64,7 @@ static u_int get_actual_size(u_int size, u_int flags) {
 #ifdef EXTRA_CREDIT
 
 static size_t get_mapped_size(u_int size) {
+	if (size == 0) return 0;
 	size_t mapped_size = 0;
 	do {
 		mapped_size += page_size;
@@ -78,6 +79,7 @@ static void *create_mapped_ptr(LK_RECORD *malloc_record, u_int size, u_int flags
 	if (flags & LKM_PROT_BEFORE) protected_block_size += page_size;
 	if (flags & LKM_PROT_AFTER) protected_block_size += page_size;
 	void *ptr = mmap(NULL, mapped_size + protected_block_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (flags & LKM_INIT) memset(ptr, 0, mapped_size + protected_block_size);
 	lk_malloc_record_set_malloced_ptr(malloc_record, ptr);
 	return ptr;
 }
