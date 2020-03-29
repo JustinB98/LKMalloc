@@ -66,7 +66,9 @@ Justin Behrman
 * test - A test enviroment
   * lib - Where lkmalloc.a will reside
   * shell_tests - Contains shell tests that will execute the c code (source in test/src, exe in test/bin)
-    * reg_tests - Tests for regular program
+    * reg_tests - Tests for regular program. Only 2 tests will not work with the extra credit program. They are the ones that test that
+				  the extra credit flags don't work in the regular program. This means if the extra credit program is tested with the regular tests,
+				  test04.sh will have 2 failed tests
 	  * test01.sh - Tests lkmalloc
 	  * test02.sh - Tests lkfree
 	  * test03.sh - Tests lkreport
@@ -112,9 +114,11 @@ Justin Behrman
 	* ec - Same as all but compiles with -DEXTRA_CREDIT. Used to create the extra credit version of the library
 	* depend - Creates .d files of each source file without compiling into .o files
 	* install_into_test - Creates the archive file if not all created and copies the archive file and places it in the lib directory in the test environment as well as copying lkmalloc.h and placing it in the include directory of the test environment. The result is the test environment has the files it needs to start working with the lkmalloc API.
-	* run_reg_tests - Calls the clean rule in the test environment and then runs all the regular tests
-	* run_ec_tests - Calls the clean rule in the test environment and then runs all the extra credit tests
-	* tests - Recompiles archive file and installs into test environment then runs all the regular tests. Then recompiles archive file again but with EXTRA_CREDIT defined. Then clean the test environment then runs the extra credit tests
+	* run_reg_tests - Install the library (without compiling if library exists). Then calls the clean rule in the test environment and then runs all the regular tests. Useful for running only the regular tests
+	* run_ec_tests - Install the library (without compiling if library exists). Calls the clean rule in the test environment and then runs all the extra credit tests. Useful for only running the extra credit tests.
+	* tests - Recompiles archive file and installs into test environment then runs all the regular tests. Then recompiles archive file again but with EXTRA_CREDIT defined. Then clean the test environment then runs the extra credit tests. This produces a lot of output and is useful for only a glance or in use with less(1). Use "run_reg_tests" or "run_ec_tests" to see the output better.
+	  * Recommended to use make clean run_reg_tests to run only the regular tests
+	  * Recommended to use make clean ec run_ec_tests to run only the extra credit tests
 	* build|lib|test/lib - Just to create them since they'll have no files after using git clone
 	* %.o - Object files are compiled with CFLAGS, which is -g -Wall and -Werror. If ec rule was called, then -DEXTRA_CREDIT will also be included in CFLAGS.
 	* %.d - Dependencies files are created using -M flag with gcc and the target is renamed to "build/%.o"
