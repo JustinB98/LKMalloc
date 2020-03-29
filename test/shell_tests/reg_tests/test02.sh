@@ -32,6 +32,10 @@ test_name="Print with Warning Test"
 grep "WARNING" test_file > /dev/null 2>&1
 $assert_success
 
+test_name="LKMalloc with size of 0"
+$shift_and_free 0 0x0 0x0 0 > /dev/null 2>&1
+$assert_success
+
 test_name="Freeing With LKF_APPROX redzone under"
 $shift_and_free 10 0x4 0x1 -8 2> test_file > /dev/null
 $assert_success
