@@ -190,3 +190,5 @@ Justin Behrman
 
 	* Regarding the extra credit section, mmap would only be called once as opposed to calling twice (or three times) to grab both the user block and the protected block. This is because (I don't believe) mmap is guaranteed to return a block at the specified address. When I tried this originally, I could not get it to work (maybe I was doing something wrong). What happens in the program as of now is using mmap to get the entire block needed, then using mprotect, set the region to PROT_NONE.
 	* LKReport will report at the end of the program execution with the default flags LKR_SERIOUS, LKR_BAD_FREE, LKR_ORPHAN_FREE and LKR_DOUBLE_FREE. Basically all the flags that show something is wrong. They are printed to stderr.
+	* lkmalloc.h has #include <stdlib.h> in order to get u_int definition. lkmalloc also has the extra credit flags already defined, however, they can't be used in the regular program. This is because I couldn't find a way to run the preprocessor on #ifdef EXTRA_CREDIT and not get rid of the flags
+	* If the pointer passed to lkmalloc is pointing to garbage, then printing that pointer will cause valgrind to complain.
