@@ -208,3 +208,4 @@ Justin Behrman
 	* If malloc fails for creating the data structure, a message is printed then exit(EXIT_FAILURE) is called because there's not much else to do.
 	* If malloc fails for creating malloc, -ENFILE is returned. This is because if -ENOMEM is returned, the caller might think that malloc failed for creating their space so they might take the wrong actions. Mainly used to differentiate between the two errors.
 	* If malloc fails for a caller's request, then -ENOMEM is returned, but the record is still put in the all records list to keep the option for printing records with error return values in the future.
+	* If gettimeofday(2) fails, the program will continue. Using perror, a message will be printed out to stderr and the timeval structure is zeroed out using memset.
