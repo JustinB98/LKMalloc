@@ -38,7 +38,12 @@ static void init_if_needed() {
 		}
 		initialized = 1;
 		lk_data_init();
-		atexit(lk_lib_fini);
+		int ret = atexit(lk_lib_fini);
+		if (ret != 0) {
+			perror("Could not install clean up function with atexit");
+			fprintf(stderr, "Exiting...\n");
+			exit(EXIT_FAILURE);
+		}
 	}
 }
 
