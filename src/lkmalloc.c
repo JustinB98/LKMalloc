@@ -161,6 +161,7 @@ static void fill_metadata(LK_METADATA *metadata, int line_num, char *file_name, 
 	metadata->function_name = function_name;
 	if (gettimeofday(&metadata->timestamp, NULL) < 0) {
 		perror("gettimeofday");
+		memset(&metadata->timestamp, 0, sizeof(struct timeval));
 	}
 }
 
