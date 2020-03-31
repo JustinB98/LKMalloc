@@ -28,4 +28,5 @@ $assert_approx_free 100 > /dev/null 2>&1
 $assert_success
 
 printf "==================== TEST03.SH END ====================\n"
+test_type="test03.sh"
 . shell_tests/finish.sh
