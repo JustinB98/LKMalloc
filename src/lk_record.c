@@ -17,7 +17,7 @@ LK_RECORD *lk_create_record(int record_type, u_int flags, void **ptr_passed, LK_
 		else record->ptr_passed = NULL;
 		record->metadata = *metadata;
 		memset(&record->sub_record, 0, sizeof(record->sub_record));
-	}
+	} else fprintf(stderr, "Could not create record! Returning -ENOMEM\n");
 	return record;
 }
 
