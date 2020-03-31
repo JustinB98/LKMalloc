@@ -10,10 +10,20 @@ static LINKED_LIST *all_records_list;
 static BINARY_TREE *completed_records;
 static BINARY_TREE *active_records;
 
+static void exit_if_null(void *ptr, char *type) {
+	if (ptr == NULL) {
+		fprintf(stderr, "%s could not be created... Exiting...\n", type);
+		exit(EXIT_FAILURE);
+	}
+}
+
 void lk_data_init() {
 	all_records_list = linked_list_init();
+	exit_if_null(all_records_list, "all records list");
 	completed_records = binary_tree_init();
+	exit_if_null(completed_records, "completed records");
 	active_records = binary_tree_init();
+	exit_if_null(active_records, "active records");
 }
 
 void lk_data_insert_malloc_record(void *ptr, LK_RECORD *malloc_record) {
