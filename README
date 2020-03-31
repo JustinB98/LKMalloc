@@ -108,6 +108,9 @@ Justin Behrman
 	  1. Mallocs a block of memory of size * sizeof(size_t *) to be used as an array. Then mallocs a size_t* type to each block of this new memory (basically creating a size_t* array).
 	  2. Separates each block into quarters and frees the second one, then the last one, then the third one, then the first one. This will test the underlying data structure.
 
+# Code Reuse
+	Most of the testing framework, such as test/shell_tests/assert_successful_exit.sh, test/shell_tests/assert_unsuccessful_exit.sh, and the test/shell_tests/finish.sh and the the Makefile function 'run_test_directory' were taken from HW1.
+
 # Makefile
 	The Makefile is designed to create object files from the source files in the src directory, and bundle them up in an archive file (lkmalloc.a). There is also a way to test with the rule "tests".
 
@@ -130,7 +133,7 @@ Justin Behrman
 	* lkmalloc.a - Created with "ar rcs" and uses all .o files created from the source files in "src"
 
 ## Makefile Rules in Test environment
-	This Makefile was designed to create a exe file based on a source file. There will be as many source files as .exe files
+	This Makefile was designed to create a exe file based on a source file. There will be as many source files as .exe files. The exe files are compiled with the command 'gcc -g -Wall -Werror -I include -o bin/code src/code.c lib/lkmalloc.a' assuming the src file was code.c. For some reason I didn't have to use -l or -L flags. Passing the lkmalloc.a as another source worked out fine.
 	* all - Creates bin directory and all the exe files based off a c file
 	* clean - Removes bin directory
 	* run_test_directory - Not a rule but a function. Takes in the shell scripts to run and runs them while keeping track which ones passed (zero exit code). Prints how many passed vs how many there were at the end
