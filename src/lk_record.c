@@ -140,17 +140,19 @@ void lk_record_set_retval(LK_RECORD *record, int retval) {
 
 int lk_print_malloc_record(LK_RECORD *record, int fd) {
 	LK_MALLOC_RECORD *malloc_record = &MALLOC_RECORD(record);
-	return dprintf(fd, "%d,%s,%s,%d,%lu,%p,%d,%u,%p\n",
+	struct timeval *timestamp = &record->metadata.timestamp;
+	return dprintf(fd, "%d,%s,%s,%d,%lu.%lu,%p,%d,%u,%p\n",
 			record->record_type, record->metadata.file_name, record->metadata.function_name,
-			record->metadata.line_num, lk_record_get_timestamp(record),
+			record->metadata.line_num, timestamp->tv_sec, timestamp->tv_usec,
 			record->ptr_passed, record->retval, malloc_record->size,
 			malloc_record->addr_returned);
 }
 
 int lk_print_free_record(LK_RECORD *record, int fd) {
-	return dprintf(fd, "%d,%s,%s,%d,%lu,%p,%d,%u\n",
+	struct timeval *timestamp = &record->metadata.timestamp;
+	return dprintf(fd, "%d,%s,%s,%d,%lu.%lu,%p,%d,%u\n",
 			record->record_type, record->metadata.file_name, record->metadata.function_name,
-			record->metadata.line_num, lk_record_get_timestamp(record),
+			record->metadata.line_num, timestamp->tv_sec, timestamp->tv_usec,
 			record->ptr_passed, record->retval, record->flags);
 }
 
