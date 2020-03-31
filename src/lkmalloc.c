@@ -201,6 +201,7 @@ int __lkmalloc_internal(u_int size, void **ptr, u_int flags, char *file, const c
 	LK_METADATA metadata;
 	fill_metadata(&metadata, line, file, func);
 	LK_RECORD *malloc_record = lk_create_malloc_record(flags, ptr, &metadata, size);
+	if (malloc_record == NULL) return -ENOMEM;
 	if (malloc_request_has_invalid_args(flags, size, ptr)) {
 		insert_into_failed(malloc_record, -EINVAL);
 		return -EINVAL;
@@ -295,6 +296,7 @@ int __lkfree_internal(void **ptr, u_int flags, char *file, const char *func, int
 	LK_METADATA metadata;
 	fill_metadata(&metadata, line, file, func);
 	LK_RECORD *free_record = lk_create_record(1, flags, ptr, &metadata);
+	if (free_record == NULL) return -ENOMEM;
 	if (free_request_has_invalid_args(ptr, flags)) {
 		insert_into_failed(free_record, -EINVAL);
 		return -EINVAL;
