@@ -150,7 +150,7 @@ int lk_print_malloc_record(LK_RECORD *record, int fd) {
 
 int lk_print_free_record(LK_RECORD *record, int fd) {
 	struct timeval *timestamp = &record->metadata.timestamp;
-	return dprintf(fd, "%d,%s,%s,%d,%lu.%lu,%p,%d,%u\n",
+	return dprintf(fd, "%d,%s,%s,%d,%lu.%lu,%p,%d,%u,\n",
 			record->record_type, record->metadata.file_name, record->metadata.function_name,
 			record->metadata.line_num, timestamp->tv_sec, timestamp->tv_usec,
 			record->ptr_passed, record->retval, record->flags);
